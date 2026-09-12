@@ -1,34 +1,141 @@
 # Greenberg Villa
 
-A React + TypeScript implementation of the `villa-desktop` frame from the
-[Figma file](https://www.figma.com/design/ZORykUWv0POOusWM2J5d4N/Untitled?node-id=4-4) —
-a one-page site for a private villa on Evia island, Greece.
+A booking site for a villa rental on Evia island, Greece — a public marketing
+page plus a password-protected admin for handling enquiries, bookings, pricing
+and site content. Built from a Figma design.
 
-## Stack
+- **Public site** in English, Hebrew and Greek, with an availability calendar,
+  an enquiry form and a live map.
+- **Admin** at `/admin` for approving bookings, pricing stays, editing the
+  photos and coordinates, and managing admin accounts.
 
-- **Vite 8** + **React 19** + **TypeScript**
-- **Tailwind CSS v4** via `@tailwindcss/vite`, with the design's palette and type
-  scale declared as `@theme` tokens in `src/index.css`
-- No UI library — every component is written against the Figma spec
+**Stack:** Vite + React 19 + TypeScript + Tailwind CSS v4 on the front end, an
+Express API on the back, data stored as JSON files on disk.
 
-## Getting started
+---
+
+## Requirements
+
+| | |
+| --- | --- |
+| Node.js | `^20.19.0` or `>=22.12.0` — Vite 8 sets the floor |
+| npm | 10 or newer (ships with those Node versions) |
+
+Check with `node -v`. Nothing else is needed: no database, no Docker, no
+external services.
+
+## Setup
+
+**1. Clone and install**
 
 ```bash
+git clone https://github.com/TalMekler/greenberg-villa-website.git
+cd greenberg-villa-website
 npm install
-npm run dev      # web on :5173 + booking API on :3001
-npm run build    # type-check + production bundle
-npm run lint
 ```
 
-`npm run dev` runs two processes via `concurrently`: Vite for the site and the
-booking API (`tsx watch server/index.ts`). Vite proxies `/api` to the API, so the
-browser only ever talks to `:5173`. Run them separately with `npm run dev:web` /
-`npm run dev:api`; `npm run start` runs the API alone. Override its port with
-`API_PORT` (default `3001`) — deliberately not `PORT`, which dev harnesses often
-set for the web server.
+**2. Create your admin credentials**
 
-Copy `.env.example` to `.env` and set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before the
-first run — they bootstrap the first admin account.
+```bash
+cp .env.example .env
+```
+
+Then open `.env` and set your own values:
+
+```
+ADMIN_EMAIL=you@example.com
+ADMIN_PASSWORD=choose-a-strong-one
+```
+
+These create the **first admin account** the first time the API starts. After
+that, `server/data/users.json` is the source of truth and these values are
+ignored — change your password from inside the admin, not here. The password
+must be at least 8 characters with a letter and a number.
+
+Do this **before** the first run. Without it the API starts but refuses every
+sign-in, and `/admin` will tell you so.
+
+**3. Run it**
+
+```bash
+npm run dev
+```
+
+| | |
+| --- | --- |
+| Site | http://localhost:5173 |
+| Admin | http://localhost:5173/admin |
+| API | http://localhost:3001 |
+
+Sign in at `/admin` with the email and password you just put in `.env`.
+
+## What `npm run dev` starts
+
+Two processes, run together by `concurrently` and colour-tagged `web` and `api`:
+
+- **`web`** — Vite dev server on `:5173`, serving the React app.
+- **`api`** — the Express API on `:3001`, restarted on change by `tsx watch`.
+
+Vite proxies `/api` through to the API, so the browser only ever talks to
+`:5173` and there are no CORS concerns. Run them separately with `npm run dev:web`
+and `npm run dev:api` if you prefer separate terminals.
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Site + API together, for development |
+| `npm run dev:web` | Vite only |
+| `npm run dev:api` | API only, with watch |
+| `npm run build` | Type-checks the whole project, then bundles to `dist/` |
+| `npm run preview` | Serves the built bundle locally |
+| `npm run lint` | oxlint over the source |
+| `npm start` | Runs the API alone, without watch |
+
+## Where the data lives
+
+Everything is JSON on disk under `server/data/`, created on first use and
+**git-ignored** — it is your data, not part of the repo:
+
+| File | Contents |
+| --- | --- |
+| `inquiries.json` | Booking requests, their status and agreed price |
+| `users.json` | Admin accounts — scrypt password hashes, never plaintext |
+| `site-images.json` | Which photo fills each slot on the site |
+| `location.json` | The map's centre point and zoom |
+| `uploads/` | The image files themselves |
+
+On the very first run the image store seeds itself by copying the photos in
+`src/assets/images/`, so the site looks complete straight away. To start over
+from scratch, stop the server, delete `server/data/`, and start it again.
+
+## Deploying
+
+`npm run build` produces a static bundle in `dist/`. The API is a separate
+long-running process (`npm start`). Two things to set up on the host:
+
+1. **SPA fallback** — serve `index.html` for unknown paths, or a direct hit on
+   `/admin` will 404. Netlify: `/* /index.html 200`. Nginx: `try_files $uri
+   /index.html`.
+2. **Proxy `/api`** to wherever the API process is listening, and set
+   `NODE_ENV=production` so the session cookie is marked `secure`. Serve the
+   whole thing over HTTPS.
+
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the host's environment for the first
+run, and `API_PORT` if `3001` is taken. `API_PORT` deliberately is not `PORT`,
+which many hosts set for the web process.
+
+## Troubleshooting
+
+| Symptom | Cause |
+| --- | --- |
+| `/admin` says credentials are not configured | No `.env`, or the API has not been restarted since you created it |
+| Sign-in rejected after several tries | Login throttling: 8 failed attempts per 15 minutes, then a pause |
+| Signed out unexpectedly | Sessions live in server memory, so restarting the API signs everyone out |
+| Calendar and photos are empty | The API is not running — only `dev:web` was started |
+| Push to GitHub fails with `HTTP 400` | The repo carries ~22 MB of images; `git config http.postBuffer 524288000` |
+
+---
 
 ## Routes
 

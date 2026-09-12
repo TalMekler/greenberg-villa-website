@@ -1,0 +1,19 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+*.log
+
+# Local booking data written by the API server
+server/data
+
+# Local credentials
+.env
+.env.local
+
+# Uploaded media
+server/data/uploads
+
+# Local map location
+server/data/location.json

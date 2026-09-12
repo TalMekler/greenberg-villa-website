@@ -1,0 +1,164 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  /* Palette — taken 1:1 from the Figma design (no Figma variables were defined) */
+  --color-navy: #1b3a5c;
+  --color-navy-line: #2a4e70;
+  --color-terracotta: #c97d60;
+  --color-ink: #222d3a;
+  --color-slate: #525c67;
+  --color-cream: #f4efe6;
+  --color-sand: #faf8f4;
+  --color-shell: #fcfaf7;
+  --color-line: #ede8dc;
+  --color-line-warm: #e6dec1;
+  --color-sea: #d4e4ec;
+
+  /* English, and the default for anything else. */
+  --font-serif: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --font-sans: "Source Sans 3", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --shadow-card: 0 4px 16px 0 rgb(0 0 0 / 0.03);
+  --shadow-panel: 0 12px 40px 0 rgb(27 58 92 / 0.06);
+}
+
+@layer base {
+  /*
+    Per-language type. Each language gets faces that actually cover its script,
+    rather than falling back to a system default mid-page.
+  */
+  :root[lang="he"] {
+    --font-serif: "Frank Ruhl Libre", "Times New Roman", serif;
+    --font-sans: "Assistant", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  :root[lang="el"] {
+    /* GFS Didot covers Greek and Latin, so the brand name keeps the display face. */
+    --font-serif: "GFS Didot", "Cormorant Garamond", Georgia, serif;
+    --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /*
+    Cormorant Garamond has a small x-height — 0.386 of its size, against the
+    0.48 of the face the design was drawn with — so headings read noticeably
+    smaller at the same px. `font-size-adjust` scales the face to a target
+    x-height ratio, which fixes every heading at once instead of editing each
+    size. 0.444 works out to ~1.15x on Cormorant.
+
+    Frank Ruhl Libre (0.468) and GFS Didot (0.456) are already close to the
+    original, so Hebrew and Greek opt out rather than being inflated.
+  */
+  :root {
+    --display-adjust: 0.444;
+
+    /*
+      Same correction for body copy. Manrope, the face the design was drawn
+      with, has an x-height of 0.54; Source Sans 3 (0.486) and Assistant (0.485)
+      both sit about a tenth short, so all three languages target 0.54 and read
+      at the size the design intended.
+    */
+    --body-adjust: 0.54;
+  }
+
+  :root[lang="he"],
+  :root[lang="el"] {
+    --display-adjust: none;
+  }
+
+  /* Inherited from body, so text without an explicit class is covered too. */
+  body,
+  .font-sans {
+    font-size-adjust: var(--body-adjust);
+  }
+
+  .font-serif {
+    font-size-adjust: var(--display-adjust);
+  }
+
+  :root {
+    /* How far below the viewport top an anchored section comes to rest. The
+       navbar scrollspy reads this back, so the two can never drift apart. */
+    --nav-offset: 88px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* keep anchored sections clear of the fixed navbar */
+    scroll-padding-top: var(--nav-offset);
+  }
+
+  body {
+    background-color: var(--color-shell);
+    color: var(--color-slate);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scroll reveal — elements start hidden and fade up once observed. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Leaflet chrome, toned down to match the site's palette. */
+.leaflet-container {
+  background: var(--color-sea);
+  font-family: var(--font-sans);
+
+  /*
+   * Leaflet stacks its panes and controls at z-index 400–1000, which would sit
+   * above the fixed navbar (z-40). `isolation` makes the map its own stacking
+   * context, so those values only compete with each other and the whole map
+   * stays on the page's base layer.
+   */
+  isolation: isolate;
+  z-index: 0;
+}
+
+.leaflet-control-attribution {
+  background: rgb(255 255 255 / 0.8);
+  font-size: 10px;
+}
+
+.leaflet-control-attribution a {
+  color: var(--color-navy);
+}
+
+.leaflet-bar a {
+  color: var(--color-navy);
+}

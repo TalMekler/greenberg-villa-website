@@ -30,12 +30,16 @@
   */
   :root[lang="he"] {
     --font-serif: "Frank Ruhl Libre", "Times New Roman", serif;
+    --display-weight: 500;
     --font-sans: "Assistant", ui-sans-serif, system-ui, sans-serif;
   }
 
   :root[lang="el"] {
     /* GFS Didot covers Greek and Latin, so the brand name keeps the display face. */
     --font-serif: "GFS Didot", "Cormorant Garamond", Georgia, serif;
+    /* GFS Didot ships a single weight — asking for more only gets the browser's
+       synthetic bold, which smears the face. It already reads solid at 400. */
+    --display-weight: 400;
     --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   }
 
@@ -51,6 +55,13 @@
   */
   :root {
     --display-adjust: 0.444;
+
+    /*
+      Cormorant Garamond is a light face by design — its 400 reads thinner than
+      the design's headings, especially in white over a photo. 500 gives the
+      headings body without tipping them into a bold, advert-like voice.
+    */
+    --display-weight: 500;
 
     /*
       Same correction for body copy. Manrope, the face the design was drawn
@@ -74,6 +85,7 @@
 
   .font-serif {
     font-size-adjust: var(--display-adjust);
+    font-weight: var(--display-weight);
   }
 
   :root {

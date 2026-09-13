@@ -54,21 +54,22 @@ export const en: Dictionary = {
     openInMaps: "Open in maps",
     highlights: [
       {
-        title: "Chiliadou Beach",
-        distance: "200m away",
+        title: "Gialtron Beach",
+        distance: "2 min drive",
         description:
-          "A short, scenic walk down to one of Greece's most famous pristine pebble beaches.",
+          "The village beach at the end of the road, with the thermal springs at its far edge.",
       },
       {
-        title: "Limni Town",
-        distance: "15 min drive",
+        title: "Loutra Edipsou",
+        distance: "30 min drive",
         description:
-          "Charming traditional seaside town with red-tiled roofs, tavernas, and quiet cafes.",
+          "The nearest town for shopping and dining — and the ferry port across to the mainland.",
       },
       {
         title: "Athens Airport",
-        distance: "2 hours away",
-        description: "Easy access via highway and bridge from Athens International Airport (ATH).",
+        distance: "3.5 hrs",
+        description:
+          "Drive to Edipsos, take the ferry to Arkitsa, then the motorway south to ATH.",
       },
     ],
   },

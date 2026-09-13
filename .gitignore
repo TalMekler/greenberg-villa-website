@@ -17,3 +17,6 @@ server/data/uploads
 
 # Local map location
 server/data/location.json
+
+# Recorded walkthroughs of the landing page
+videos

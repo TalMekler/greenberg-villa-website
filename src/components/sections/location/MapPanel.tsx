@@ -28,7 +28,7 @@ export function MapPanel({ location }: { location: VillaLocation }) {
       </div>
 
       <div className="relative flex-1 border-t border-line-warm">
-        <VillaMap location={location} label="Greenberg Villa" />
+        <VillaMap location={location} label="Green Villa" />
       </div>
     </div>
   );

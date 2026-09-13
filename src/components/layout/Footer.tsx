@@ -10,7 +10,7 @@ export function Footer() {
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 border-t border-navy-line py-12">
         <div className="flex flex-col items-center gap-8 lg:flex-row lg:justify-between">
           <a href="#home" className="font-serif text-[24px] text-white">
-            Greenberg Villa
+            Green Villa
           </a>
 
           <nav aria-label="Footer">

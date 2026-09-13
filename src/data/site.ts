@@ -24,5 +24,5 @@ export const transitIcons: IconName[] = ["plane", "car", "ship"];
 export const contactChannels = [
   { icon: "messageSquare", href: "https://wa.me/306912345678", value: "+30 691 234 5678" },
   { icon: "phone", href: "tel:+302109876543", value: "+30 210 987 6543" },
-  { icon: "mail", href: "mailto:welcome@greenbergvilla.gr", value: "welcome@greenbergvilla.gr" },
+  { icon: "mail", href: "mailto:welcome@greenvilla.gr", value: "welcome@greenvilla.gr" },
 ] as const satisfies readonly { icon: IconName; href: string; value: string }[];

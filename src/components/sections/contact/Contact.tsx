@@ -303,7 +303,7 @@ export function Contact({ stay }: ContactProps) {
             <div className="reveal flex items-center gap-6 rounded-lg border border-navy-line bg-[rgba(42,78,112,0.25)] p-6">
               <img
                 src={images.hosts}
-                alt="Maria and Nikos, the hosts of Greenberg Villa"
+                alt="Maria and Nikos, the hosts of Green Villa"
                 width={80}
                 height={80}
                 className="size-20 shrink-0 rounded-full object-cover"

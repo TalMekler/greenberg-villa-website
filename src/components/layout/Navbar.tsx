@@ -34,7 +34,7 @@ export function Navbar() {
           href="#home"
           className="font-serif text-[22px] text-white transition-opacity hover:opacity-80 lg:text-[28px]"
         >
-          Greenberg Villa
+          Green Villa
         </a>
 
         <ul className="hidden items-center gap-8 lg:flex">

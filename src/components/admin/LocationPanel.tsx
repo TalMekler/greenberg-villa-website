@@ -185,7 +185,7 @@ export function LocationPanel({ location, onSaved }: LocationPanelProps) {
         <div className="h-[280px] overflow-hidden rounded-lg border border-line">
           <VillaMap
             location={preview}
-            label="Greenberg Villa"
+            label="Green Villa"
             draggable
             onMove={handleDrag}
           />

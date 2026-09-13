@@ -38,8 +38,11 @@ export interface Dictionary {
   about: {
     eyebrow: string;
     title: string;
-    bodyOne: string;
-    bodyTwo: string;
+    /** Sets the scene, printed beside the photo. */
+    intro: string[];
+    /** Heading for the second half — the building itself. */
+    houseTitle: string;
+    house: string[];
     cta: string;
     stats: { title: string; detail: string }[];
   };

@@ -109,7 +109,7 @@ export function Dashboard({
       <header className="bg-navy px-5 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="font-serif text-[22px] text-white">Greenberg Villa</p>
+            <p className="font-serif text-[22px] text-white">Green Villa</p>
             <p className="font-sans text-[12px] tracking-[0.08em] text-cream uppercase">
               Booking admin
             </p>

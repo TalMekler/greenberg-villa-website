@@ -1,4 +1,4 @@
-# Greenberg Villa
+# Green Villa
 
 A booking site for a villa rental on Evia island, Greece — a public marketing
 page plus a password-protected admin for handling enquiries, bookings, pricing

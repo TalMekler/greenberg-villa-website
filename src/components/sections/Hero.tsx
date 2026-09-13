@@ -24,7 +24,7 @@ export function Hero({ image }: { image: SiteImage | null }) {
 
       <div className="relative mx-auto flex w-full max-w-[1440px] flex-col items-center gap-6 px-5 pt-28 pb-16 text-center sm:px-8 lg:px-20 lg:pb-24">
         <h1 className="max-w-[900px] font-serif text-[44px] leading-[1.1] text-white sm:text-[60px] lg:text-[72px]">
-          Greenberg Villa
+          Green Villa
         </h1>
         <p className="max-w-[700px] font-sans text-[17px] font-light text-cream sm:text-[20px]">
           {t.hero.subtitle}

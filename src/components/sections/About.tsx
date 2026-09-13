@@ -34,12 +34,16 @@ export function About({ image }: { image: SiteImage }) {
                 {t.about.title}
               </h2>
             </div>
-            <p className="font-sans text-[17px] leading-[1.8] text-slate lg:text-[18px]">
-              {t.about.bodyOne}
-            </p>
-            <p className="font-sans text-[16px] leading-[1.7] text-slate">
-              {t.about.bodyTwo}
-            </p>
+            <div className="flex flex-col gap-4">
+              {t.about.intro.map((paragraph) => (
+                <p
+                  key={paragraph}
+                  className="font-sans text-[17px] leading-[1.8] text-slate lg:text-[18px]"
+                >
+                  {paragraph}
+                </p>
+              ))}
+            </div>
             <div className="pt-3">
               <Button href="#gallery" variant="outline">
                 {t.about.cta}
@@ -53,6 +57,24 @@ export function About({ image }: { image: SiteImage }) {
               alt={image.alt}
               className="h-[320px] w-full rounded-lg object-cover sm:h-[440px] lg:h-[560px]"
             />
+          </div>
+        </div>
+
+        <div className="reveal flex flex-col gap-6 border-t border-line pt-12 lg:pt-16">
+          <h3 className="heading-card font-serif text-[26px] text-navy sm:text-[30px]">
+            {t.about.houseTitle}
+          </h3>
+          {/* Balanced columns rather than a grid: the paragraphs differ in
+              length, and a two-column grid would leave one side short. */}
+          <div className="flex flex-col gap-4 lg:block lg:columns-2 lg:gap-10 lg:[&>p]:break-inside-avoid">
+            {t.about.house.map((paragraph) => (
+              <p
+                key={paragraph}
+                className="font-sans text-[16px] leading-[1.7] text-slate lg:mb-4"
+              >
+                {paragraph}
+              </p>
+            ))}
           </div>
         </div>
       </div>

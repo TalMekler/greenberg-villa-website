@@ -37,7 +37,7 @@ export function LoginForm({ configured, onSignedIn }: LoginFormProps) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-navy px-5 py-16">
       <div className="w-full max-w-[420px] rounded-xl bg-white p-8 shadow-panel">
-        <p className="font-serif text-[26px] text-navy">Greenberg Villa</p>
+        <p className="font-serif text-[26px] text-navy">Green Villa</p>
         <p className="mt-1 font-sans text-[12px] font-bold tracking-[0.08em] text-slate uppercase">
           Booking admin
         </p>

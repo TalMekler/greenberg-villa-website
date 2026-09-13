@@ -16,7 +16,7 @@ export default function Admin() {
     const previousLang = root.lang;
     const previousDir = root.dir;
 
-    document.title = "Admin — Greenberg Villa";
+    document.title = "Admin — Green Villa";
     root.lang = "en";
     root.dir = "ltr";
 

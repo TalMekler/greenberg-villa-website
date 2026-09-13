@@ -18,23 +18,34 @@ export const en: Dictionary = {
     cta: "Check Availability",
   },
   about: {
-    eyebrow: "The Sanctuary",
-    title: "Perched above the turquoise waters",
-    bodyOne:
-      "Greenberg Villa is a meticulously designed luxurious retreat perched gracefully on the rugged cliffs of Evia island. Built with local stone and pristine white-washed plaster, the estate seamlessly blends classic Cycladic architecture with modern Mediterranean minimalist luxury.",
-    bodyTwo:
-      "Wake up to panoramic sea views, enjoy sun-drenched afternoons by your private infinity pool, and dine al fresco on expansive terraces wrapped in serene, wild lavender gardens. Every detail is curated to provide a quiet, upscale escape where the horizon is your only boundary.",
+    eyebrow: "The Setting",
+    title: "Where the sea meets the forest",
+    intro: [
+      "Green Villa stands right on the shoreline of the quiet bay of Edipsos, at the point where the sea and the forest meet in a dance of colour.",
+      "On one side the deep blues of clear water stretch away; on the other, a rich green carpet of trees and foliage climbs the slope.",
+      "The flowering orchard invites slow walks between fruit trees and soft scent, while the vegetable garden gives fresh, flavourful produce straight from the soil.",
+      "This rare combination of sea, forest, orchard and garden turns every stay at the villa into something calm and restorative.",
+      "Green Villa is not simply a place to sleep — it is a harmonious meeting of nature at its best with the quiet of a real home.",
+    ],
+    houseTitle: "The house and the grounds",
+    house: [
+      "Green Villa has three separate apartments and two further bedrooms, alongside a generous shared space on the ground floor.",
+      "That shared space holds a living room, a dining area and a kitchen — all equipped to a five-star standard and finished in blues, whites and greens that together create a particular sense of calm.",
+      "The garden wrapping the house offers a rich and varied experience: a stone terrace under a pergola, with a built stone barbecue kitchen and a handmade wooden table, set among the vegetable garden and the fruit orchard that invite picking straight from the branch.",
+      "The raised pool area sits on a broad lawn, with sun loungers and comfortable armchairs.",
+      "Beside the pool are further seating corners, offering a more secluded and intimate space to enjoy the quiet and the view.",
+    ],
     cta: "Explore the Villa",
     stats: [
-      { title: "5 Bedrooms", detail: "3 suites & 2 double rooms" },
-      { title: "12 Guests", detail: "Across five private rooms" },
-      { title: "Sea View", detail: "180° panoramic vista" },
-      { title: "Private Pool", detail: "Heated infinity pool" },
+      { title: "5 Units", detail: "3 apartments & 2 bedrooms" },
+      { title: "12 Guests", detail: "Across five private units" },
+      { title: "Sea & Forest", detail: "Right on the shoreline" },
+      { title: "Pool & Garden", detail: "Orchard, kitchen garden, BBQ" },
     ],
   },
   gallery: {
     eyebrow: "Visual Journey",
-    title: "The Greenberg Gallery",
+    title: "The Green Villa Gallery",
     description:
       "Explore the serene spaces, curated design elements, and stunning outdoor landscapes.",
     open: "Open image",
@@ -132,7 +143,7 @@ export const en: Dictionary = {
   },
   transit: {
     eyebrow: "The Journey",
-    title: "How to get to Greenberg Villa",
+    title: "How to get to Green Villa",
     description:
       "While Evia island feels quiet and secluded, it is easily reachable by car or a beautiful, relaxing ferry ride from the mainland.",
     steps: [
@@ -205,10 +216,10 @@ export const en: Dictionary = {
     channels: { whatsapp: "WhatsApp", phone: "Phone", email: "Email" },
   },
   footer: {
-    rights: "© 2025 Greenberg Villa. All rights reserved.",
+    rights: "© 2025 Green Villa. All rights reserved.",
     designed: "Designed in Greece",
-    instagram: "Greenberg Villa on Instagram",
-    facebook: "Greenberg Villa on Facebook",
+    instagram: "Green Villa on Instagram",
+    facebook: "Green Villa on Facebook",
   },
   units: { night: "night", nights: "nights", guest: "guest", guests: "guests" },
 };

@@ -17,12 +17,12 @@ export type SingleImageKey = (typeof singleImageKeys)[number];
  * too and keyed by the card's slug.
  */
 export const exploreSlugs = [
-  "chiliadou-beach",
-  "limni-village",
-  "edipsos-hot-springs",
-  "drymonas-waterfall",
-  "kirinthos-gorge",
-  "taverna-platanos",
+  "gialtron-thermal-springs",
+  "gialtra-village",
+  "gialtra-hills",
+  "gregolimano-bay",
+  "loutra-edipsou",
+  "drymona-waterfalls",
 ] as const;
 export type ExploreSlug = (typeof exploreSlugs)[number];
 

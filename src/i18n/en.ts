@@ -73,43 +73,43 @@ export const en: Dictionary = {
     eyebrow: "Local Secrets",
     title: "Explore the beauty of Evia",
     description:
-      "Discover hidden waterfalls, authentic Greek tavernas, thermal springs, and scenic coastal hikes just a short journey from your private villa.",
+      "Thermal springs a few minutes down the coast road, sheltered bays, hillside villages and forest waterfalls — the north-west corner of Evia, starting at your doorstep.",
     cards: [
       {
-        title: "Chiliadou Beach",
-        distance: "200m away",
+        title: "Gialtron Thermal Springs",
+        distance: "3 min drive",
         description:
-          "Pristine pebble beach framed by dramatic rocky cliffs, famous for crystal-clear sapphire waters.",
+          "Warm mineral water runs off the rocks straight into the sea at the edge of the village. Open air, no ticket, best an hour before sunset.",
       },
       {
-        title: "Limni Village",
-        distance: "15 min drive",
+        title: "Gialtra Village",
+        distance: "5 min drive",
         description:
-          "A picturesque coastal village full of red-roofed neoclassical homes, winding alleys, and cozy fish tavernas.",
+          "The old village on the slope above the bay, where the ouzeri and the cafes around the square stay busy long after dark.",
       },
       {
-        title: "Edipsos Hot Springs",
-        distance: "40 min drive",
+        title: "The Hills Above the Bay",
+        distance: "From the doorstep",
         description:
-          "Natural hot thermal springs flowing directly from coastal rocks into the cool waters of the sea.",
+          "Dirt tracks climb from the coast road into the ridge behind the villa, topping out near 700m with the whole gulf laid out below.",
       },
       {
-        title: "Drymonas Waterfall",
-        distance: "25 min drive",
-        description:
-          "A lush, hidden forest path leading to beautiful cascading mountain waterfalls and fresh natural pools.",
-      },
-      {
-        title: "Kirinthos Gorge",
-        distance: "20 min drive",
-        description:
-          "Scenic, breezy hiking trails crossing pristine creeks under giant plane trees and dramatic gorge walls.",
-      },
-      {
-        title: "Taverna Platanos",
+        title: "Gregolimano Bay",
         distance: "10 min drive",
         description:
-          "Enjoy slow-cooked lamb and fresh local olive oil dishes under a 200-year-old giant plane tree.",
+          "A sheltered bay on the south shore of the peninsula, closed in by pine-covered slopes and calm on days when the open coast is not.",
+      },
+      {
+        title: "Loutra Edipsou",
+        distance: "30 min drive",
+        description:
+          "Greece's best-known spa town since antiquity: thermal baths, a long seafront of tavernas, and the ferry across to the mainland.",
+      },
+      {
+        title: "Drymona Waterfalls",
+        distance: "1 hr 15 drive",
+        description:
+          "Worth the drive east across the island: chestnut forest, a shaded footpath, and falls dropping into a cold green pool.",
       },
     ],
   },

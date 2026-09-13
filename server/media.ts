@@ -42,15 +42,34 @@ const galleryDefaults = [
 ];
 
 const exploreDefaults: Record<ExploreSlug, { file: string; alt: string }> = {
-  "chiliadou-beach": { file: "explore-1.jpg", alt: "Chiliadou Beach" },
-  "limni-village": { file: "explore-2.jpg", alt: "Limni Village" },
-  "edipsos-hot-springs": { file: "explore-3.jpg", alt: "Edipsos Hot Springs" },
-  "drymonas-waterfall": { file: "explore-4.jpg", alt: "Drymonas Waterfall" },
-  "kirinthos-gorge": { file: "explore-5.jpg", alt: "Kirinthos Gorge" },
-  "taverna-platanos": { file: "explore-6.jpg", alt: "Taverna Platanos" },
+  "gialtron-thermal-springs": {
+    file: "explore-3.jpg",
+    alt: "Thermal water steaming off the rocks into the sea at Loutra Gialtron",
+  },
+  "gialtra-village": {
+    file: "explore-6.jpg",
+    alt: "A taverna table laid under an old plane tree above the sea",
+  },
+  "gialtra-hills": {
+    file: "explore-5.jpg",
+    alt: "A dirt track winding through the wooded hills behind the bay",
+  },
+  "gregolimano-bay": {
+    file: "explore-1.jpg",
+    alt: "The sheltered turquoise bay at Gregolimano, enclosed by headlands",
+  },
+  "loutra-edipsou": {
+    file: "explore-2.jpg",
+    alt: "The waterfront of Loutra Edipsou, lined with houses and fishing boats",
+  },
+  "drymona-waterfalls": {
+    file: "explore-4.jpg",
+    alt: "The Drymona waterfalls dropping into a green forest pool",
+  },
 };
 
 let cache: SiteImages | null = null;
+let loading: Promise<SiteImages> | null = null;
 let writing: Promise<void> = Promise.resolve();
 
 export function mediaUrl(fileName: string): string {
@@ -123,7 +142,22 @@ function isComplete(value: SiteImages | null): value is SiteImages {
   return exploreSlugs.every((slug) => Boolean(value.explore[slug]));
 }
 
+/**
+ * Reads the store, seeding it on a first run or after the shape changes.
+ *
+ * Concurrent callers share one run. Without that, two requests arriving before
+ * the cache is warm both seed: each writes its own copy of every file, and the
+ * loser's orphan sweep then deletes files the winner's records point at.
+ */
 async function load(): Promise<SiteImages> {
+  if (cache) return cache;
+  loading ??= readOrSeed().finally(() => {
+    loading = null;
+  });
+  return loading;
+}
+
+async function readOrSeed(): Promise<SiteImages> {
   if (cache) return cache;
   try {
     const raw = await readFile(dataFile, "utf8");

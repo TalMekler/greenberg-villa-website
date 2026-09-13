@@ -59,24 +59,6 @@ export function About({ image }: { image: SiteImage }) {
             />
           </div>
         </div>
-
-        <div className="reveal flex flex-col gap-6 border-t border-line pt-12 lg:pt-16">
-          <h3 className="heading-card font-serif text-[26px] text-navy sm:text-[30px]">
-            {t.about.houseTitle}
-          </h3>
-          {/* Balanced columns rather than a grid: the paragraphs differ in
-              length, and a two-column grid would leave one side short. */}
-          <div className="flex flex-col gap-4 lg:block lg:columns-2 lg:gap-10 lg:[&>p]:break-inside-avoid">
-            {t.about.house.map((paragraph) => (
-              <p
-                key={paragraph}
-                className="font-sans text-[16px] leading-[1.7] text-slate lg:mb-4"
-              >
-                {paragraph}
-              </p>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

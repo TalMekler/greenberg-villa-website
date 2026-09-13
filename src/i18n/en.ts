@@ -27,14 +27,6 @@ export const en: Dictionary = {
       "This rare combination of sea, forest, orchard and garden turns every stay at the villa into something calm and restorative.",
       "Green Villa is not simply a place to sleep — it is a harmonious meeting of nature at its best with the quiet of a real home.",
     ],
-    houseTitle: "The house and the grounds",
-    house: [
-      "Green Villa has three separate apartments and two further bedrooms, alongside a generous shared space on the ground floor.",
-      "That shared space holds a living room, a dining area and a kitchen — all equipped to a five-star standard and finished in blues, whites and greens that together create a particular sense of calm.",
-      "The garden wrapping the house offers a rich and varied experience: a stone terrace under a pergola, with a built stone barbecue kitchen and a handmade wooden table, set among the vegetable garden and the fruit orchard that invite picking straight from the branch.",
-      "The raised pool area sits on a broad lawn, with sun loungers and comfortable armchairs.",
-      "Beside the pool are further seating corners, offering a more secluded and intimate space to enjoy the quiet and the view.",
-    ],
     cta: "Explore the Villa",
     stats: [
       { title: "5 Units", detail: "3 apartments & 2 bedrooms" },

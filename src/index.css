@@ -31,6 +31,9 @@
   :root[lang="he"] {
     --font-serif: "Frank Ruhl Libre", "Times New Roman", serif;
     --display-weight: 500;
+    /* Frank Ruhl Libre skips 600, so asking for it lands on 700 — far too
+       black for a card title. Hebrew holds up fine at 500 this small. */
+    --display-weight-card: 500;
     --font-sans: "Assistant", ui-sans-serif, system-ui, sans-serif;
   }
 
@@ -40,6 +43,7 @@
     /* GFS Didot ships a single weight — asking for more only gets the browser's
        synthetic bold, which smears the face. It already reads solid at 400. */
     --display-weight: 400;
+    --display-weight-card: 400;
     --font-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   }
 
@@ -64,6 +68,14 @@
     --display-weight: 500;
 
     /*
+      Card titles sit at 22px, a third of the hero's size, and a serif needs
+      more weight at small sizes to hold the same visual colour — the 500 that
+      reads right at 72px still looks thin beside 14px body copy. 600 is a real
+      Cormorant weight; 700 only clots the counters without adding presence.
+    */
+    --display-weight-card: 600;
+
+    /*
       Same correction for body copy. Manrope, the face the design was drawn
       with, has an x-height of 0.54; Source Sans 3 (0.486) and Assistant (0.485)
       both sit about a tenth short, so all three languages target 0.54 and read
@@ -86,6 +98,12 @@
   .font-serif {
     font-size-adjust: var(--display-adjust);
     font-weight: var(--display-weight);
+  }
+
+  /* Title of a card — Explore, The Journey. Must come after `.font-serif`,
+     which it overrides at equal specificity. */
+  .heading-card {
+    font-weight: var(--display-weight-card);
   }
 
   :root {

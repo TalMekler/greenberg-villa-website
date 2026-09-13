@@ -34,7 +34,7 @@ export function Explore({ images }: { images: Record<ExploreSlug, SiteImage> }) 
               </div>
               <div className="flex flex-col gap-3 p-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-serif text-[22px] text-navy">{card.title}</h3>
+                  <h3 className="heading-card font-serif text-[22px] text-navy">{card.title}</h3>
                   <span className="rounded-[4px] bg-cream px-2 py-1 font-sans text-[11px] font-bold text-navy">
                     {card.distance}
                   </span>

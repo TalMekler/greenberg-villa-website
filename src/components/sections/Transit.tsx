@@ -33,7 +33,7 @@ export function Transit() {
                 <p className="font-sans text-[14px] font-bold tracking-[0.08em] text-slate uppercase">
                   {step.kicker}
                 </p>
-                <h3 className="font-serif text-[22px] text-navy">{step.title}</h3>
+                <h3 className="heading-card font-serif text-[22px] text-navy">{step.title}</h3>
                 <p className="font-sans text-[15px] leading-[1.6] text-slate">{step.description}</p>
               </div>
             </li>

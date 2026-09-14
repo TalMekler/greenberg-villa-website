@@ -20,3 +20,4 @@ server/data/location.json
 
 # Recorded walkthroughs of the landing page
 videos
+api/_server.mjs

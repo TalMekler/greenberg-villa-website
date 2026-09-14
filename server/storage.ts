@@ -15,11 +15,21 @@ import { extname } from "node:path";
 export const BUCKET = process.env.SUPABASE_BUCKET ?? "site-images";
 
 const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+/*
+  Supabase renamed its API keys: what the dashboard used to call the
+  service_role key is now the "secret key". Accept either, newest name first,
+  so the same code works whichever vintage of project it is pointed at.
+
+  Only this one is ever used. The publishable key is for browsers and grants
+  nothing here, and SUPABASE_JWKS_URL belongs to Supabase Auth, which this app
+  does not use — it keeps its own accounts, with scrypt hashes, in the `users`
+  table.
+*/
+const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !serviceKey) {
   throw new Error(
-    "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set. Copy them from the " +
-      "Supabase dashboard into .env — see the README section 'Where the data lives'.",
+    "SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) are not set. " +
+      "Copy them from the Supabase dashboard — see the README section 'Where the data lives'.",
   );
 }
 

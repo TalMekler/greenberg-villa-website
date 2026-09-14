@@ -120,7 +120,7 @@ Copy four values from the Supabase dashboard into `.env` (git-ignored):
 | --- | --- |
 | `DATABASE_URL` | Project Settings → Database → Connection string → **Transaction pooler** (port 6543) |
 | `SUPABASE_URL` | Project Settings → API → Project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → `service_role` key |
+| `SUPABASE_SECRET_KEY` | Project Settings → API keys → secret key (older projects: `service_role`; `SUPABASE_SERVICE_ROLE_KEY` is still accepted) |
 | `SUPABASE_BUCKET` | Optional; defaults to `site-images` |
 
 Use the *pooled* connection string for the running server. Supabase caps direct
@@ -168,7 +168,7 @@ Set these in **Vercel → Settings → Environment Variables**, not just in `.en
 | --- | --- |
 | `DATABASE_URL` | Supabase **Transaction pooler** URI, port 6543 |
 | `SUPABASE_URL` | `https://<ref>.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-side only — never expose it to the browser |
+| `SUPABASE_SECRET_KEY` | Server-side only — never expose it to the browser |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Only used to create the very first account |
 
 `NODE_ENV` is already `production` on Vercel, so the session cookie is marked

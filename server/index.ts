@@ -112,6 +112,28 @@ app.get("/api/health", async (_request, response) => {
     ADMIN_PASSWORD: Boolean(process.env.ADMIN_PASSWORD),
   };
 
+  /*
+    The host and port are not secrets — the host is derivable from the project
+    ref, and the port is one of two well-known numbers. Reporting them turns
+    "ENOTFOUND" into an obvious diagnosis, because the single most common cause
+    is the direct database host (IPv6-only, which Vercel cannot resolve) being
+    used in place of the pooler. The password is never touched.
+  */
+  let target: Record<string, unknown> | undefined;
+  if (process.env.DATABASE_URL) {
+    try {
+      const dsn = new URL(process.env.DATABASE_URL);
+      target = {
+        host: dsn.hostname,
+        port: dsn.port,
+        userHasProjectRef: dsn.username.includes("."),
+        looksPooled: dsn.hostname.includes(".pooler.supabase.com") && dsn.port === "6543",
+      };
+    } catch {
+      target = { parse: "DATABASE_URL is not a valid URL" };
+    }
+  }
+
   let startupState = "ok";
   let code: string | undefined;
   try {
@@ -122,7 +144,9 @@ app.get("/api/health", async (_request, response) => {
     code = problem.code ?? problem.name ?? "unknown";
   }
 
-  response.status(startupState === "ok" ? 200 : 503).json({ env, startup: startupState, code });
+  response
+    .status(startupState === "ok" ? 200 : 503)
+    .json({ env, database: target, startup: startupState, code });
 });
 
 /** Everything else waits for that setup, and reports plainly if it failed. */

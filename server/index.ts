@@ -56,7 +56,7 @@ import {
   type InquiryStatus,
   type PriceMode,
 } from "../src/lib/inquiry";
-import { createInquiry, listInquiries, setPrice, updateStatus } from "./store";
+import { createInquiry, deleteInquiry, listInquiries, setPrice, updateStatus } from "./store";
 
 // Reads ADMIN_USERNAME / ADMIN_PASSWORD without committing them to the repo.
 try {
@@ -565,6 +565,27 @@ app.post("/api/inquiries", async (request, response) => {
   }
 
   response.status(201).json({ inquiry: await createInquiry(values) });
+});
+
+/**
+ * Erases a cancelled inquiry. Cancelled only, and enforced here rather than
+ * only in the UI, so the guard cannot be stepped around by calling the API.
+ */
+app.delete("/api/inquiries/:id", requireSettledPassword, async (request, response) => {
+  const id = String(request.params.id);
+  const target = (await listInquiries()).find((inquiry) => inquiry.id === id);
+
+  if (!target) {
+    response.status(404).json({ error: "No such inquiry." });
+    return;
+  }
+  if (target.status !== "cancelled") {
+    response.status(409).json({ error: "Only a cancelled inquiry can be deleted." });
+    return;
+  }
+
+  await deleteInquiry(id);
+  response.json({ deleted: id });
 });
 
 app.patch("/api/inquiries/:id", requireSettledPassword, async (request, response) => {

@@ -4,7 +4,7 @@ import { hasConflict, stayDateKeys } from "../../../data/availability";
 import { useInquiries } from "../../../hooks/useInquiries";
 import { useSiteImages } from "../../../hooks/useSiteImages";
 import { useVillaLocation } from "../../../hooks/useVillaLocation";
-import { ApiError, logout, setInquiryStatus } from "../../../lib/api";
+import { ApiError, deleteInquiry, logout, setInquiryStatus } from "../../../lib/api";
 import { fromDateKey, nightsBetween } from "../../../lib/date";
 import {
   formatMoney,
@@ -42,6 +42,7 @@ export function Dashboard({
   const { inquiries, loading, error, unauthorized, reload } = useInquiries();
   const [filter, setFilter] = useState<Filter>("all");
   const [pendingCancel, setPendingCancel] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [passwordChanged, setPasswordChanged] = useState(false);
@@ -68,6 +69,25 @@ export function Dashboard({
         return;
       }
       setActionError(caught instanceof Error ? caught.message : "That change did not go through.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  /** Erases a cancelled inquiry. Two steps, because nothing brings it back. */
+  const removeInquiry = async (id: string) => {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      await deleteInquiry(id);
+      setPendingDelete(null);
+      await reload();
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) {
+        onSignedOut();
+        return;
+      }
+      setActionError(caught instanceof Error ? caught.message : "That deletion did not go through.");
     } finally {
       setBusyId(null);
     }
@@ -279,6 +299,39 @@ export function Dashboard({
                                 </span>
                               ) : null}
                             </div>
+                          ) : inquiry.status === "cancelled" ? (
+                            pendingDelete === inquiry.id ? (
+                              <div className="flex flex-col items-start gap-2">
+                                <span className="font-sans text-[12px] text-slate">
+                                  Delete permanently?
+                                </span>
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    disabled={busyId === inquiry.id}
+                                    onClick={() => void removeInquiry(inquiry.id)}
+                                    className={`${actionButton} bg-terracotta text-white hover:bg-[#b96b4f]`}
+                                  >
+                                    Yes, delete
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPendingDelete(null)}
+                                    className={`${actionButton} border border-line text-slate hover:bg-sand`}
+                                  >
+                                    Keep
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setPendingDelete(inquiry.id)}
+                                className={`${actionButton} border border-line text-slate hover:border-terracotta hover:text-terracotta`}
+                              >
+                                Delete
+                              </button>
+                            )
                           ) : (
                             <span className="text-[12px] text-slate opacity-60">—</span>
                           )}

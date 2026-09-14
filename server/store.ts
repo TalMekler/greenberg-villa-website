@@ -101,3 +101,14 @@ export async function updateStatus(id: string, status: InquiryStatus): Promise<I
   );
   return row ? toInquiry(row) : null;
 }
+
+/**
+ * Removes an inquiry for good. Only a cancelled one: an approved booking still
+ * holds dates in the calendar, and a pending one is still awaiting an answer,
+ * so neither should vanish by a single click. The caller checks the status;
+ * this repeats the check in SQL so a direct API call cannot skip it.
+ */
+export async function deleteInquiry(id: string): Promise<boolean> {
+  const gone = await query(`DELETE FROM inquiries WHERE id = $1 AND status = 'cancelled' RETURNING id`, [id]);
+  return gone.length > 0;
+}

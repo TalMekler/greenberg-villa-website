@@ -70,6 +70,11 @@ export async function setInquiryStatus(id: string, status: InquiryStatus): Promi
   return inquiry;
 }
 
+/** Erases a cancelled inquiry. The server refuses any other status. */
+export async function deleteInquiry(id: string): Promise<void> {
+  await request(`/api/inquiries/${id}`, { method: "DELETE" });
+}
+
 export interface Session {
   authenticated: boolean;
   /** False when no account exists and no bootstrap env vars are set. */

@@ -22,7 +22,7 @@ export function Explore({ images }: { images: Record<ExploreSlug, SiteImage> }) 
             return (
             <li
               key={slug}
-              className="reveal group flex flex-col overflow-hidden rounded-lg bg-white shadow-card transition-all duration-300 hover:-translate-y-1.5 hover:shadow-panel"
+              className="reveal group flex flex-col overflow-hidden rounded-lg bg-white shadow-card transition-all duration-300 hover:shadow-panel"
             >
               <div className="h-[240px] overflow-hidden">
                 <img

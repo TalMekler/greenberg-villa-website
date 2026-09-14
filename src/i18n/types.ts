@@ -34,6 +34,12 @@ export interface Dictionary {
     closeMenu: string;
     skipToContent: string;
   };
+  loader: {
+    /** Announced to screen readers and shown under the mark. */
+    message: string;
+    /** Used as the aria-label on the busy region. */
+    label: string;
+  };
   hero: { subtitle: string; cta: string };
   about: {
     eyebrow: string;

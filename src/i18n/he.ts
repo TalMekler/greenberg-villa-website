@@ -13,6 +13,10 @@ export const he: Dictionary = {
     closeMenu: "סגירת תפריט",
     skipToContent: "דילוג לתוכן",
   },
+  loader: {
+    message: "מכינים עבורכם את הווילה",
+    label: "טוען את האתר",
+  },
   hero: {
     subtitle: "המפלט הפרטי שלכם בים התיכון, באי אוויה",
     cta: "בדיקת זמינות",

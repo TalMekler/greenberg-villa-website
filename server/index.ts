@@ -25,7 +25,8 @@ import {
   normaliseEmail,
   resetPassword,
 } from "./users";
-import { migrateFromJson } from "./db";
+import { ensureSchema } from "./db";
+import { ensureBucket, publicUrl } from "./storage";
 import { readLocation, writeLocation } from "./location";
 import {
   addGalleryImage,
@@ -35,7 +36,6 @@ import {
   replaceExplore,
   replaceSingle,
   updateAlt,
-  uploadsDir,
 } from "./media";
 import { ZOOM_RANGE, isValidLocation, type VillaLocation } from "../src/lib/location";
 import {
@@ -83,16 +83,14 @@ const upload = multer({
   },
 });
 
-/** Uploaded media, served read-only. Filenames are server-generated UUIDs. */
-app.use(
-  "/api/media",
-  express.static(uploadsDir, {
-    index: false,
-    dotfiles: "deny",
-    maxAge: "1y",
-    immutable: true,
-  }),
-);
+/**
+ * Photos are served straight from Supabase Storage now, so records hold a
+ * public bucket URL. This route only covers links minted before that move —
+ * anything still pointing at /api/media is sent on to the same object.
+ */
+app.get("/api/media/:file", (request, response) => {
+  response.redirect(308, publicUrl(String(request.params.file)));
+});
 
 const statuses: InquiryStatus[] = ["pending", "approved", "declined", "cancelled"];
 
@@ -523,10 +521,9 @@ app.use(
   },
 );
 
-// Move any JSON stores from before the database existed, then make sure there
-// is an account to sign in with. Order matters: the import has to run first, or
-// a fresh env-var account would suppress the imported users.
-migrateFromJson();
+// Tables and bucket first, then make sure there is an account to sign in with.
+await ensureSchema();
+await ensureBucket();
 await ensureBootstrapUser();
 
 /** Sets or clears the agreed price on a confirmed booking. */

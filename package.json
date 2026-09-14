@@ -13,13 +13,15 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "start": "tsx server/index.ts"
+    "start": "tsx server/index.ts",
+    "migrate:supabase": "tsx scripts/migrate-to-supabase.ts"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
+    "@supabase/supabase-js": "^2.116.0",
     "express": "^5.2.1",
     "leaflet": "^1.9.4",
     "multer": "^2.3.0",
+    "pg": "^8.23.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3"
@@ -31,9 +33,11 @@
     "@types/leaflet": "^1.9.22",
     "@types/multer": "^2.2.0",
     "@types/node": "^24.13.3",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "better-sqlite3": "^13.0.3",
     "concurrently": "^10.0.5",
     "oxlint": "^1.79.0",
     "tailwindcss": "^4.3.3",

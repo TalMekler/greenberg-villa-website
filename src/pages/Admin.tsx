@@ -2,23 +2,21 @@ import { useEffect } from "react";
 import { ForcedPasswordChange, LoginForm } from "../components/admin/auth";
 import { Dashboard } from "../components/admin/dashboard";
 import { useSession } from "../hooks/useSession";
+import { usePinnedLanguage } from "../i18n";
 
 export default function Admin() {
   const { session, loading: checkingSession, reload: reloadSession } = useSession();
 
+  // The admin is written in English only, so it pins the document to English
+  // and left-to-right. Setting `lang` and `dir` here directly does not hold:
+  // the provider's effect runs after this page's and puts them back.
+  usePinnedLanguage("en");
+
   // The page is unauthenticated until the API says otherwise; the API guards the
   // data either way, so this only decides what to render.
   useEffect(() => {
-    const root = document.documentElement;
     const previousTitle = document.title;
-    // The admin is English-only, so it declares its own locale rather than
-    // inheriting the visitor's — which would also pull in that language's fonts.
-    const previousLang = root.lang;
-    const previousDir = root.dir;
-
     document.title = "Admin — Green Villa";
-    root.lang = "en";
-    root.dir = "ltr";
 
     const meta = document.createElement("meta");
     meta.name = "robots";
@@ -28,8 +26,6 @@ export default function Admin() {
     return () => {
       meta.remove();
       document.title = previousTitle;
-      root.lang = previousLang;
-      root.dir = previousDir;
     };
   }, []);
 

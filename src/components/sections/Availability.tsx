@@ -12,7 +12,7 @@ import {
   toDateKey,
   weekdayLabels,
 } from "../../lib/date";
-import { useAvailability } from "../../hooks/useAvailability";
+import type { useAvailability } from "../../hooks/useAvailability";
 import { Button } from "../ui/Button";
 import { Icon } from "../ui/Icon";
 import { SectionHeading } from "../ui/SectionHeading";
@@ -22,12 +22,17 @@ import { useLanguage } from "../../i18n";
 interface AvailabilityProps {
   stay: Stay | null;
   onStayChange: (stay: Stay | null) => void;
+  /**
+   * Fetched by the page rather than here, so the loader can wait on this
+   * request alongside the others before uncovering the site.
+   */
+  availability: ReturnType<typeof useAvailability>;
 }
 
 const cellBase =
   "flex h-14 items-center justify-center rounded-md font-sans text-[15px] transition-all duration-150 sm:h-16 sm:text-[16px]";
 
-export function Availability({ stay, onStayChange }: AvailabilityProps) {
+export function Availability({ stay, onStayChange, availability }: AvailabilityProps) {
   // `initialMonth` is a factory, so React uses it as a lazy initialiser and the
   // calendar always opens on the month the visitor is actually in.
   const [month, setMonth] = useState(initialMonth);
@@ -38,7 +43,7 @@ export function Availability({ stay, onStayChange }: AvailabilityProps) {
   const narrowWeekdays = useMemo(() => weekdayLabels(meta.locale, "narrow"), [meta.locale]);
 
   // Seed bookings plus anything the admin has approved, served by the API.
-  const { bookedDates, loading, error } = useAvailability();
+  const { bookedDates, loading, error } = availability;
 
   const today = useMemo(() => startOfDay(new Date()), []);
   const atCurrentMonth =

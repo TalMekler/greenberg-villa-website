@@ -13,6 +13,10 @@ export const en: Dictionary = {
     closeMenu: "Close menu",
     skipToContent: "Skip to content",
   },
+  loader: {
+    message: "Preparing your escape",
+    label: "Loading the site",
+  },
   hero: {
     subtitle: "Your private Mediterranean escape on the island of Evia",
     cta: "Check Availability",

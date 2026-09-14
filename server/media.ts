@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { query, transaction } from "./db";
-import { listAll, pathFromUrl, remove, upload } from "./storage";
+import { listSweepable, pathFromUrl, remove, upload, uploadAs } from "./storage";
 import {
   exploreSlugs,
   type ExploreSlug,
@@ -121,13 +121,20 @@ async function readStore(): Promise<SiteImages | null> {
   };
 }
 
-/** Uploads a shipped default into the bucket and returns its record. */
-async function seedFrom(sourceName: string, alt: string): Promise<SiteImage> {
+/**
+ * Uploads a shipped default under a name derived from its slot, and gives the
+ * row an id derived the same way.
+ *
+ * Both being deterministic is what makes seeding safe to run twice at once:
+ * concurrent instances write the same bytes to the same object and insert the
+ * same row id, instead of creating two rival sets where one gets swept away.
+ */
+async function seedFrom(sourceName: string, alt: string, slot: string): Promise<SiteImage> {
   const bytes = await readFile(join(defaultsDir, sourceName));
   const mime = sourceName.endsWith(".png") ? "image/png" : "image/jpeg";
-  const { url } = await upload(bytes, sourceName, mime);
+  const { url } = await uploadAs(`seed/${slot}-${sourceName}`, bytes, mime);
 
-  return { id: crypto.randomUUID(), url, alt, uploadedAt: new Date().toISOString() };
+  return { id: `seed-${slot}`, url, alt, uploadedAt: new Date().toISOString() };
 }
 
 /**
@@ -139,27 +146,33 @@ async function seed(): Promise<SiteImages> {
 
   for (const key of ["hero", "lifestyle"] as SingleImageKey[]) {
     const preset = defaults[key];
-    rows.push({ ...(await seedFrom(preset.file, preset.alt)), slot: key, position: 0 });
+    rows.push({ ...(await seedFrom(preset.file, preset.alt, key)), slot: key, position: 0 });
   }
   for (const [index, alt] of galleryDefaults.entries()) {
+    const slot = `gallery-${index}`;
     rows.push({
-      ...(await seedFrom(`gallery-${index + 1}.jpg`, alt)),
+      ...(await seedFrom(`gallery-${index + 1}.jpg`, alt, slot)),
+      id: `seed-${slot}`,
       slot: "gallery",
       position: index,
     });
   }
   for (const slug of exploreSlugs) {
     const preset = exploreDefaults[slug];
-    rows.push({ ...(await seedFrom(preset.file, preset.alt)), slot: slug, position: 0 });
+    rows.push({ ...(await seedFrom(preset.file, preset.alt, slug)), slot: slug, position: 0 });
   }
 
-  // One transaction: the table either gains a complete set of photos or none.
+  /*
+    No DELETE first, and conflicts are ignored: whichever instance gets there
+    first wins each row, and a second one arriving behind it changes nothing.
+    Clearing the table first is what made a concurrent seed destructive.
+  */
   await transaction(async (run) => {
-    await run(`DELETE FROM site_images`);
     for (const row of rows) {
       await run(
         `INSERT INTO site_images (id, slot, position, url, alt, "uploadedAt")
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (id) DO NOTHING`,
         [row.id, row.slot, row.position, row.url, row.alt, row.uploadedAt],
       );
     }
@@ -168,7 +181,8 @@ async function seed(): Promise<SiteImages> {
   const seeded = await readStore();
   if (!seeded) throw new Error("Seeding did not produce a complete image store");
 
-  await removeOrphans(seeded);
+  // Deliberately no sweep here: the objects are seconds old, and sweeping them
+  // is precisely the bug this rewrite removes.
   console.log("Seeded site images from the bundled defaults.");
   return seeded;
 }
@@ -301,6 +315,6 @@ async function removeOrphans(current: SiteImages): Promise<void> {
       .map((image) => pathFromUrl(image.url))
       .filter((path): path is string => path !== null),
   );
-  const stale = (await listAll()).filter((name) => !referenced.has(name));
+  const stale = (await listSweepable()).filter((name: string) => !referenced.has(name));
   await remove(stale);
 }

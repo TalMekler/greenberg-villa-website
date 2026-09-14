@@ -75,10 +75,24 @@ export async function upload(
   originalName: string,
   mimeType: string,
 ): Promise<{ path: string; url: string }> {
-  const path = `${randomUUID()}${extensionFor(mimeType, originalName)}`;
-  const { error } = await supabase().storage
-    .from(BUCKET)
-    .upload(path, buffer, { contentType: mimeType, upsert: false });
+  return uploadAs(`${randomUUID()}${extensionFor(mimeType, originalName)}`, buffer, mimeType);
+}
+
+/**
+ * Writes to a caller-chosen name, replacing whatever was there.
+ *
+ * Seeding uses this with a fixed name per slot. Two instances seeding at once
+ * then write identical bytes to identical names instead of racing to create two
+ * sets of objects, of which one would be swept away as orphaned.
+ */
+export async function uploadAs(
+  path: string,
+  buffer: Buffer,
+  mimeType: string,
+): Promise<{ path: string; url: string }> {
+  const { error } = await supabase()
+    .storage.from(BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: true });
   if (error) throw error;
 
   return { path, url: publicUrl(path) };
@@ -97,12 +111,27 @@ export async function remove(paths: string[]): Promise<void> {
   if (error) console.warn("Could not remove unused uploads:", error.message);
 }
 
-/** Everything currently in the bucket, for the orphan sweep. */
-export async function listAll(): Promise<string[]> {
+/**
+ * Objects old enough to be safe to consider orphaned.
+ *
+ * Anything uploaded in the last few minutes is skipped. Another instance may
+ * have just written it and not yet committed the row that points at it —
+ * exactly how six seeded photos were deleted moments after being uploaded.
+ */
+const SWEEP_GRACE_MS = 15 * 60 * 1000;
+
+export async function listSweepable(): Promise<string[]> {
   const { data, error } = await supabase().storage.from(BUCKET).list("", { limit: 1000 });
   if (error) {
     console.warn("Could not list the bucket:", error.message);
     return [];
   }
-  return (data ?? []).map((file) => file.name);
+
+  const cutoff = Date.now() - SWEEP_GRACE_MS;
+  return (data ?? [])
+    .filter((file) => {
+      const created = Date.parse(file.created_at ?? "");
+      return Number.isNaN(created) ? false : created < cutoff;
+    })
+    .map((file) => file.name);
 }

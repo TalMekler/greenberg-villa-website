@@ -23,7 +23,7 @@ const defaultsDir = join(here, "..", "src", "assets", "images");
 const defaults = {
   hero: {
     file: "hero.jpg",
-    alt: "Green Villa on the shoreline of the Edipsos bay at golden hour",
+    alt: "Green Villa seen from the garden, with the bay behind it",
   },
   lifestyle: {
     file: "lifestyle.jpg",

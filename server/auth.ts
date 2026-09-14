@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
+import { query, queryOne } from "./db";
 import { countUsers, getById } from "./users";
 
 const COOKIE_NAME = "villa_admin_session";
@@ -7,15 +8,12 @@ const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
 const MAX_ATTEMPTS = 8;
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 
-interface Session {
-  userId: string;
-  expiresAt: number;
-}
-
-/** Live sessions, in memory — a restart signs everyone out. */
-const sessions = new Map<string, Session>();
-/** Failed logins per client address, to slow down guessing. */
-const attempts = new Map<string, { count: number; firstAt: number }>();
+/*
+  Sessions and the failed-login counters live in Postgres, not in memory. The
+  API runs as a serverless function, so consecutive requests routinely land on
+  different instances — an in-memory Map would sign the admin back out at the
+  first navigation, and would reset the login throttle just as often.
+*/
 
 /** Any account at all, or env vars ready to bootstrap one. */
 export async function credentialsConfigured(): Promise<boolean> {
@@ -34,49 +32,72 @@ function parseCookies(header: string | undefined): Record<string, string> {
   );
 }
 
-function sweep(): void {
-  const now = Date.now();
-  sessions.forEach((session, token) => {
-    if (session.expiresAt <= now) sessions.delete(token);
-  });
-}
-
-/** The signed-in user's id, or null. */
-export function sessionUserId(request: Request): string | null {
-  sweep();
+/** The signed-in user's id, or null. Expired rows are dropped as they are met. */
+export async function sessionUserId(request: Request): Promise<string | null> {
   const token = parseCookies(request.headers.cookie)[COOKIE_NAME];
   if (!token) return null;
-  return sessions.get(token)?.userId ?? null;
+
+  const row = await queryOne<{ userId: string }>(
+    `DELETE FROM sessions WHERE token = $1 AND "expiresAt" <= $2 RETURNING "userId"`,
+    [token, Date.now()],
+  );
+  if (row) return null; // it was expired, and is now gone
+
+  const live = await queryOne<{ userId: string }>(
+    `SELECT "userId" FROM sessions WHERE token = $1`,
+    [token],
+  );
+  return live?.userId ?? null;
 }
 
-export function throttled(request: Request): boolean {
+export async function throttled(request: Request): Promise<boolean> {
   const key = request.ip ?? "unknown";
-  const record = attempts.get(key);
+  const record = await queryOne<{ count: number; firstAt: string }>(
+    `SELECT count, "firstAt" FROM login_attempts WHERE key = $1`,
+    [key],
+  );
   if (!record) return false;
 
-  if (Date.now() - record.firstAt > ATTEMPT_WINDOW_MS) {
-    attempts.delete(key);
+  if (Date.now() - Number(record.firstAt) > ATTEMPT_WINDOW_MS) {
+    await query(`DELETE FROM login_attempts WHERE key = $1`, [key]);
     return false;
   }
 
   return record.count >= MAX_ATTEMPTS;
 }
 
-export function recordFailure(request: Request): void {
+export async function recordFailure(request: Request): Promise<void> {
   const key = request.ip ?? "unknown";
-  const record = attempts.get(key);
-  if (!record || Date.now() - record.firstAt > ATTEMPT_WINDOW_MS) {
-    attempts.set(key, { count: 1, firstAt: Date.now() });
-    return;
-  }
-  record.count += 1;
+  const now = Date.now();
+
+  // One statement, so two failures arriving together cannot both read a count
+  // of 2 and both write 3. A window older than the limit restarts the count.
+  await query(
+    `INSERT INTO login_attempts (key, count, "firstAt") VALUES ($1, 1, $2)
+     ON CONFLICT (key) DO UPDATE
+        SET count = CASE WHEN $2 - login_attempts."firstAt" > $3 THEN 1
+                         ELSE login_attempts.count + 1 END,
+            "firstAt" = CASE WHEN $2 - login_attempts."firstAt" > $3 THEN $2
+                             ELSE login_attempts."firstAt" END`,
+    [key, now, ATTEMPT_WINDOW_MS],
+  );
 }
 
-export function startSession(request: Request, response: Response, userId: string): void {
-  attempts.delete(request.ip ?? "unknown");
+export async function startSession(
+  request: Request,
+  response: Response,
+  userId: string,
+): Promise<void> {
+  await query(`DELETE FROM login_attempts WHERE key = $1`, [request.ip ?? "unknown"]);
 
   const token = randomBytes(32).toString("hex");
-  sessions.set(token, { userId, expiresAt: Date.now() + SESSION_TTL_MS });
+  await query(`INSERT INTO sessions (token, "userId", "expiresAt") VALUES ($1, $2, $3)`, [
+    token,
+    userId,
+    Date.now() + SESSION_TTL_MS,
+  ]);
+  // Sweep whatever else has expired, so the table cannot grow without bound.
+  await query(`DELETE FROM sessions WHERE "expiresAt" <= $1`, [Date.now()]);
 
   response.cookie(COOKIE_NAME, token, {
     httpOnly: true,
@@ -87,18 +108,19 @@ export function startSession(request: Request, response: Response, userId: strin
   });
 }
 
-export function endSession(request: Request, response: Response): void {
+export async function endSession(request: Request, response: Response): Promise<void> {
   const token = parseCookies(request.headers.cookie)[COOKIE_NAME];
-  if (token) sessions.delete(token);
+  if (token) await query(`DELETE FROM sessions WHERE token = $1`, [token]);
   response.clearCookie(COOKIE_NAME, { path: "/" });
 }
 
 /** Drops every session belonging to a user — used after a password change. */
-export function endSessionsForUser(userId: string, except?: Request): void {
+export async function endSessionsForUser(userId: string, except?: Request): Promise<void> {
   const keep = except ? parseCookies(except.headers.cookie)[COOKIE_NAME] : undefined;
-  sessions.forEach((session, token) => {
-    if (session.userId === userId && token !== keep) sessions.delete(token);
-  });
+  await query(`DELETE FROM sessions WHERE "userId" = $1 AND token IS DISTINCT FROM $2`, [
+    userId,
+    keep ?? null,
+  ]);
 }
 
 /** Requires a signed-in user. */
@@ -114,7 +136,7 @@ export async function requireAuth(
     return;
   }
 
-  const userId = sessionUserId(request);
+  const userId = await sessionUserId(request);
   const user = userId ? await getById(userId) : null;
 
   if (!user) {

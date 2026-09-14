@@ -320,7 +320,7 @@ app.delete("/api/users/:id", requireSettledPassword, async (request, response) =
     return;
   }
 
-  endSessionsForUser(id);
+  await endSessionsForUser(id);
   response.status(204).end();
 });
 
@@ -349,7 +349,7 @@ app.post("/api/users/:id/password", requireSettledPassword, async (request, resp
   }
 
   // Whoever was using the old password is signed out immediately.
-  endSessionsForUser(id);
+  await endSessionsForUser(id);
   response.json({ user: await getById(id) });
 });
 
@@ -359,7 +359,7 @@ app.get("/api/availability", async (_request, response) => {
 });
 
 app.get("/api/auth/session", async (request, response) => {
-  const userId = sessionUserId(request);
+  const userId = await sessionUserId(request);
   const user = userId ? await getById(userId) : null;
   response.json({
     authenticated: Boolean(user),
@@ -376,7 +376,7 @@ app.post("/api/auth/login", async (request, response) => {
     return;
   }
 
-  if (throttled(request)) {
+  if (await throttled(request)) {
     response.status(429).json({ error: "Too many attempts. Try again in a few minutes." });
     return;
   }
@@ -386,18 +386,18 @@ app.post("/api/auth/login", async (request, response) => {
 
   const user = await authenticate(email, password);
   if (!user) {
-    recordFailure(request);
+    await recordFailure(request);
     // Deliberately vague: never reveal which half was wrong.
     response.status(401).json({ error: "Incorrect email or password." });
     return;
   }
 
-  startSession(request, response, user.id);
+  await startSession(request, response, user.id);
   response.json({ authenticated: true, user });
 });
 
-app.post("/api/auth/logout", (request, response) => {
-  endSession(request, response);
+app.post("/api/auth/logout", async (request, response) => {
+  await endSession(request, response);
   response.json({ authenticated: false });
 });
 
@@ -429,7 +429,7 @@ app.post("/api/account/password", requireAuth, async (request, response) => {
   }
 
   // Any other session for this account is now stale.
-  endSessionsForUser(user.id, request);
+  await endSessionsForUser(user.id, request);
   response.json({ user: await getById(user.id) });
 });
 
@@ -570,11 +570,20 @@ app.patch("/api/inquiries/:id/price", requireSettledPassword, async (request, re
   response.json({ inquiry: await setPrice(id, price) });
 });
 
-app.listen(port, async () => {
-  console.log(`API listening on http://localhost:${port}`);
-  if (!(await credentialsConfigured())) {
-    console.warn(
-      "No admin accounts exist and ADMIN_EMAIL / ADMIN_PASSWORD are not set — /admin will refuse every sign-in.",
-    );
-  }
-});
+/*
+  On Vercel this module is imported by `api/index.ts` and the app is used as the
+  request handler — there is no socket to listen on, and calling listen() would
+  throw. Locally (`npm run dev`, `npm start`) it still binds a port.
+*/
+if (!process.env.VERCEL) {
+  app.listen(port, async () => {
+    console.log(`API listening on http://localhost:${port}`);
+    if (!(await credentialsConfigured())) {
+      console.warn(
+        "No admin accounts exist and ADMIN_EMAIL / ADMIN_PASSWORD are not set — /admin will refuse every sign-in.",
+      );
+    }
+  });
+}
+
+export default app;

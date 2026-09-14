@@ -153,20 +153,47 @@ permanent redirect to the same object in the bucket.
 
 ## Deploying
 
-`npm run build` produces a static bundle in `dist/`. The API is a separate
-long-running process (`npm start`). Two things to set up on the host:
+The whole thing runs on Vercel: the built SPA as static files, the Express API
+as a single serverless function.
 
-1. **SPA fallback** — serve `index.html` for unknown paths, or a direct hit on
-   `/admin` will 404. Netlify: `/* /index.html 200`. Nginx: `try_files $uri
-   /index.html`.
-2. **Proxy `/api`** to wherever the API process is listening, and set
-   `NODE_ENV=production` so the session cookie is marked `secure`. Serve the
-   whole thing over HTTPS.
+`vercel.json` does the wiring — `npm run build` into `dist/`, every `/api/*`
+request rewritten to `api/index.ts` (which exports the Express app; an Express
+app is already a `(req, res)` handler), and everything else falling back to
+`index.html` so a direct hit on `/admin` resolves. The seed photos are listed in
+`includeFiles`, or they would be absent from the function bundle.
 
-Set `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the
-host's environment, plus `ADMIN_EMAIL` and `ADMIN_PASSWORD` for the first run,
-and `API_PORT` if `3001` is taken. `API_PORT` deliberately is not `PORT`,
-which many hosts set for the web process.
+Set these in **Vercel → Settings → Environment Variables**, not just in `.env`:
+
+| Variable | Notes |
+| --- | --- |
+| `DATABASE_URL` | Supabase **Transaction pooler** URI, port 6543 |
+| `SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-side only — never expose it to the browser |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Only used to create the very first account |
+
+`NODE_ENV` is already `production` on Vercel, so the session cookie is marked
+`secure`. `API_PORT` is irrelevant there — the function never binds a port,
+because `app.listen()` is skipped whenever `VERCEL` is set.
+
+### Sessions
+
+Sessions and the login throttle live in Postgres, not in memory. On Vercel
+consecutive requests routinely land on different instances, so an in-memory map
+would sign the admin out at the first navigation and reset the throttle just as
+often.
+
+### Row-level security
+
+Supabase exposes the `public` schema over PostgREST, and its publishable key is
+designed to ship in browsers. Every table here is reached only by the API
+server, over the Postgres connection string, as a role that bypasses RLS — so
+`ensureSchema()` enables RLS with **no policies**, which denies everyone else,
+and revokes the table grants from `anon` and `authenticated` as well. Without
+that, the publishable key alone would read password hashes, guest details and
+live session tokens.
+
+Supabase's linter will report "RLS enabled, no policy" at INFO level for these
+tables. That is the intended state, not a gap.
 
 ## Troubleshooting
 

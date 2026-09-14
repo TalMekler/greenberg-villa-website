@@ -123,6 +123,29 @@ export async function ensureSchema(): Promise<void> {
   `);
   await query(`CREATE INDEX IF NOT EXISTS site_images_slot ON site_images (slot, position)`);
 
+  /*
+    Sessions and failed-login counters live here rather than in memory. On
+    Vercel every request may land on a different instance, so an in-memory Map
+    would sign the admin straight back out. Epoch milliseconds, not timestamptz:
+    the values are only ever compared with Date.now().
+  */
+  await query(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      token       text PRIMARY KEY,
+      "userId"    text NOT NULL,
+      "expiresAt" bigint NOT NULL
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS sessions_user ON sessions ("userId")`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS login_attempts (
+      key       text PRIMARY KEY,
+      count     integer NOT NULL,
+      "firstAt" bigint NOT NULL
+    )
+  `);
+
   // A single row, id 1, so an UPDATE can never create a second map pin.
   await query(`
     CREATE TABLE IF NOT EXISTS location (
@@ -132,6 +155,31 @@ export async function ensureSchema(): Promise<void> {
       zoom      integer NOT NULL
     )
   `);
+
+  await lockDown();
+}
+
+/**
+ * Supabase exposes the `public` schema over PostgREST, and its publishable key
+ * is meant to ship in browsers. Every table here is reached only by this
+ * server, over the Postgres connection string, as a role that bypasses RLS —
+ * so enabling RLS with no policies denies everyone else. Without it the
+ * publishable key alone would read password hashes, guest details, and live
+ * session tokens.
+ */
+async function lockDown(): Promise<void> {
+  const tables = [
+    "inquiries",
+    "users",
+    "site_images",
+    "sessions",
+    "login_attempts",
+    "location",
+  ];
+  for (const table of tables) {
+    await query(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY`);
+    await query(`REVOKE ALL ON public.${table} FROM anon, authenticated`);
+  }
 }
 
 export async function closeDb(): Promise<void> {

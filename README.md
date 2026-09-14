@@ -94,20 +94,38 @@ and `npm run dev:api` if you prefer separate terminals.
 
 ## Where the data lives
 
-Everything is JSON on disk under `server/data/`, created on first use and
+One SQLite database, `server/data/villa.db`, created on first use and
 **git-ignored** — it is your data, not part of the repo:
 
-| File | Contents |
+| Table | Contents |
 | --- | --- |
-| `inquiries.json` | Booking requests, their status and agreed price |
-| `users.json` | Admin accounts — scrypt password hashes, never plaintext |
-| `site-images.json` | Which photo fills each slot on the site |
-| `location.json` | The map's centre point and zoom |
-| `uploads/` | The image files themselves |
+| `inquiries` | Booking requests, their status and agreed price |
+| `users` | Admin accounts — scrypt password hashes, never plaintext |
+| `site_images` | Which photo fills each slot on the site, and gallery order |
+| `location` | The map's centre point and zoom (a single row) |
+
+The uploaded image **files** stay on the filesystem, in `server/data/uploads/`;
+only their metadata is in the database. The driver is
+[better-sqlite3](https://github.com/WiseLibs/better-sqlite3), which ships
+prebuilt binaries for the common platforms — no database service to install or
+run, and `npm install` needs no extra tooling on macOS, Linux or Windows x64.
+
+The database runs in WAL mode, so a read never blocks behind a write. To back
+it up, copy `villa.db` (plus `villa.db-wal` if present) while the server is
+stopped. To start over, stop the server, delete `server/data/`, and start again.
 
 On the very first run the image store seeds itself by copying the photos in
-`src/assets/images/`, so the site looks complete straight away. To start over
-from scratch, stop the server, delete `server/data/`, and start it again.
+`src/assets/images/`, so the site looks complete straight away.
+
+### Upgrading from the JSON stores
+
+Earlier versions kept four JSON files in `server/data/`. On the first start
+after this change, each one is read into the database and then renamed to
+`<name>.json.imported`. Nothing is deleted, so the originals remain as a
+fallback; you can remove them once you are satisfied the site looks right.
+
+If a file cannot be imported the server logs the reason, leaves that file
+untouched and still starts — the other stores are unaffected.
 
 ## Deploying
 

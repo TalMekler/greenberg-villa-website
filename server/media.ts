@@ -1,7 +1,8 @@
-import { copyFile, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { db } from "./db";
 import {
   exploreSlugs,
   type ExploreSlug,
@@ -11,12 +12,12 @@ import {
 } from "../src/lib/site-images";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const dataFile = join(here, "data", "site-images.json");
 export const uploadsDir = join(here, "data", "uploads");
 
 /**
- * The images the site ships with. These files stay in the repo purely to seed
- * the store on a first run — the app itself reads uploads, not these.
+ * Photo records live in the `site_images` table; the files themselves stay on
+ * disk under `data/uploads`. The images below ship in the repo purely to seed
+ * the table on a first run — the app itself reads uploads, not these.
  */
 const defaultsDir = join(here, "..", "src", "assets", "images");
 
@@ -68,9 +69,13 @@ const exploreDefaults: Record<ExploreSlug, { file: string; alt: string }> = {
   },
 };
 
-let cache: SiteImages | null = null;
-let loading: Promise<SiteImages> | null = null;
-let writing: Promise<void> = Promise.resolve();
+/*
+  Reads are a three-row-per-slot query, so they are not cached. Seeding is, via
+  an in-flight promise: without it two requests arriving on an empty store both
+  seed, each writing its own copy of every file, and the loser's orphan sweep
+  then deletes files the winner's rows point at.
+*/
+let seeding: Promise<SiteImages> | null = null;
 
 export function mediaUrl(fileName: string): string {
   return `/api/media/${fileName}`;
@@ -80,20 +85,62 @@ function fileNameFor(image: SiteImage): string {
   return image.url.replace("/api/media/", "");
 }
 
-/** Every record in the store, whatever collection it sits in. */
+/** Every record in the store, whatever slot it sits in. */
 function allImages(images: SiteImages): SiteImage[] {
   return [images.hero, images.lifestyle, ...images.gallery, ...Object.values(images.explore)];
 }
 
-async function persist(next: SiteImages): Promise<void> {
-  cache = next;
-  writing = writing.then(async () => {
-    await mkdir(dirname(dataFile), { recursive: true });
-    const temp = `${dataFile}.${process.pid}.tmp`;
-    await writeFile(temp, JSON.stringify(next, null, 2), "utf8");
-    await rename(temp, dataFile);
-  });
-  await writing;
+interface Row {
+  id: string;
+  slot: string;
+  position: number;
+  url: string;
+  alt: string;
+  uploadedAt: string;
+}
+
+const toImage = ({ id, url, alt, uploadedAt }: Row): SiteImage => ({ id, url, alt, uploadedAt });
+
+const selectAll = db.prepare(`SELECT * FROM site_images ORDER BY slot, position`);
+const insertImage = db.prepare(`
+  INSERT INTO site_images (id, slot, position, url, alt, uploadedAt)
+  VALUES (@id, @slot, @position, @url, @alt, @uploadedAt)
+`);
+const deleteSlot = db.prepare(`DELETE FROM site_images WHERE slot = ?`);
+const deleteById = db.prepare(`DELETE FROM site_images WHERE id = ?`);
+const setAlt = db.prepare(`UPDATE site_images SET alt = ? WHERE id = ?`);
+const setPosition = db.prepare(`UPDATE site_images SET position = ? WHERE id = ?`);
+const nextGalleryPosition = db.prepare(`
+  SELECT coalesce(max(position), -1) + 1 AS next FROM site_images WHERE slot = 'gallery'
+`);
+
+/** Builds the API shape from the table, or null when a slot has no row yet. */
+function readStore(): SiteImages | null {
+  const rows = selectAll.all() as Row[];
+  const bySlot = new Map<string, Row[]>();
+  for (const row of rows) {
+    const list = bySlot.get(row.slot);
+    if (list) list.push(row);
+    else bySlot.set(row.slot, [row]);
+  }
+
+  const hero = bySlot.get("hero")?.[0];
+  const lifestyle = bySlot.get("lifestyle")?.[0];
+  if (!hero || !lifestyle) return null;
+
+  const explore = {} as Record<ExploreSlug, SiteImage>;
+  for (const slug of exploreSlugs) {
+    const row = bySlot.get(slug)?.[0];
+    if (!row) return null;
+    explore[slug] = toImage(row);
+  }
+
+  return {
+    hero: toImage(hero),
+    lifestyle: toImage(lifestyle),
+    gallery: (bySlot.get("gallery") ?? []).map(toImage),
+    explore,
+  };
 }
 
 /** Copies a shipped default into the uploads dir and returns its record. */
@@ -102,77 +149,55 @@ async function seedFrom(sourceName: string, alt: string): Promise<SiteImage> {
   const fileName = `${id}${extname(sourceName)}`;
   await mkdir(uploadsDir, { recursive: true });
   await copyFile(join(defaultsDir, sourceName), join(uploadsDir, fileName));
+
   return { id, url: mediaUrl(fileName), alt, uploadedAt: new Date().toISOString() };
 }
 
 /**
- * The store starts as a copy of the images the site shipped with, so the admin
- * edits real records from the first run instead of a mix of bundled and uploaded.
+ * Fills the table from the images the site shipped with, so the admin edits
+ * real records from the first run instead of a mix of bundled and uploaded.
  */
 async function seed(): Promise<SiteImages> {
-  const gallery: SiteImage[] = [];
-  for (const [index, alt] of galleryDefaults.entries()) {
-    gallery.push(await seedFrom(`gallery-${index + 1}.jpg`, alt));
-  }
+  const rows: (SiteImage & { slot: string; position: number })[] = [];
 
-  const explore = {} as Record<ExploreSlug, SiteImage>;
+  for (const key of ["hero", "lifestyle"] as SingleImageKey[]) {
+    const preset = defaults[key];
+    rows.push({ ...(await seedFrom(preset.file, preset.alt)), slot: key, position: 0 });
+  }
+  for (const [index, alt] of galleryDefaults.entries()) {
+    rows.push({
+      ...(await seedFrom(`gallery-${index + 1}.jpg`, alt)),
+      slot: "gallery",
+      position: index,
+    });
+  }
   for (const slug of exploreSlugs) {
     const preset = exploreDefaults[slug];
-    explore[slug] = await seedFrom(preset.file, preset.alt);
+    rows.push({ ...(await seedFrom(preset.file, preset.alt)), slot: slug, position: 0 });
   }
 
-  const seeded: SiteImages = {
-    hero: await seedFrom(defaults.hero.file, defaults.hero.alt),
-    lifestyle: await seedFrom(defaults.lifestyle.file, defaults.lifestyle.alt),
-    gallery,
-    explore,
-  };
+  // One transaction: the table either gains a complete set of photos or none.
+  db.transaction(() => {
+    db.prepare(`DELETE FROM site_images`).run();
+    for (const row of rows) insertImage.run(row);
+  })();
 
-  await persist(seeded);
-  // A reseed after a shape change leaves the previous files behind.
+  const seeded = readStore();
+  if (!seeded) throw new Error("Seeding did not produce a complete image store");
+
   await removeOrphans(seeded);
   console.log("Seeded site images from the bundled defaults.");
   return seeded;
 }
 
-function isComplete(value: SiteImages | null): value is SiteImages {
-  if (!value?.hero || !value.lifestyle || !Array.isArray(value.gallery) || !value.explore) {
-    return false;
-  }
-  return exploreSlugs.every((slug) => Boolean(value.explore[slug]));
-}
-
-/**
- * Reads the store, seeding it on a first run or after the shape changes.
- *
- * Concurrent callers share one run. Without that, two requests arriving before
- * the cache is warm both seed: each writes its own copy of every file, and the
- * loser's orphan sweep then deletes files the winner's records point at.
- */
 async function load(): Promise<SiteImages> {
-  if (cache) return cache;
-  loading ??= readOrSeed().finally(() => {
-    loading = null;
-  });
-  return loading;
-}
+  const current = readStore();
+  if (current) return current;
 
-async function readOrSeed(): Promise<SiteImages> {
-  if (cache) return cache;
-  try {
-    const raw = await readFile(dataFile, "utf8");
-    const parsed = JSON.parse(raw) as SiteImages;
-    if (isComplete(parsed)) {
-      cache = parsed;
-      return cache;
-    }
-    console.warn(`${dataFile} is missing entries — reseeding.`);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.warn(`Could not read ${dataFile}, reseeding:`, error);
-    }
-  }
-  return seed();
+  seeding ??= seed().finally(() => {
+    seeding = null;
+  });
+  return seeding;
 }
 
 export async function listSiteImages(): Promise<SiteImages> {
@@ -199,6 +224,14 @@ async function store(buffer: Buffer, originalName: string, mimeType: string): Pr
   };
 }
 
+/** Swaps the single row held by `slot` for a freshly uploaded one. */
+function replaceSlot(slot: string, image: SiteImage): void {
+  db.transaction(() => {
+    deleteSlot.run(slot);
+    insertImage.run({ ...image, slot, position: 0 });
+  })();
+}
+
 /** Replaces one of the single-slot photos (hero, lifestyle). */
 export async function replaceSingle(
   key: SingleImageKey,
@@ -210,8 +243,8 @@ export async function replaceSingle(
   const current = await load();
   const image = await store(buffer, originalName, mimeType);
 
-  const next: SiteImages = { ...current, [key]: { ...image, alt: alt || current[key].alt } };
-  await persist(next);
+  replaceSlot(key, { ...image, alt: alt || current[key].alt });
+  const next = readStore()!;
   await removeOrphans(next);
   return next;
 }
@@ -227,12 +260,8 @@ export async function replaceExplore(
   const current = await load();
   const image = await store(buffer, originalName, mimeType);
 
-  const next: SiteImages = {
-    ...current,
-    explore: { ...current.explore, [slug]: { ...image, alt: alt || current.explore[slug].alt } },
-  };
-
-  await persist(next);
+  replaceSlot(slug, { ...image, alt: alt || current.explore[slug].alt });
+  const next = readStore()!;
   await removeOrphans(next);
   return next;
 }
@@ -243,49 +272,28 @@ export async function addGalleryImage(
   mimeType: string,
   alt: string,
 ): Promise<SiteImages> {
-  const current = await load();
+  await load();
   const image = await store(buffer, originalName, mimeType);
+  const { next } = nextGalleryPosition.get() as { next: number };
 
-  const next: SiteImages = { ...current, gallery: [...current.gallery, { ...image, alt }] };
-  await persist(next);
-  return next;
+  insertImage.run({ ...image, alt, slot: "gallery", position: next });
+  return readStore()!;
 }
 
 export async function removeGalleryImage(id: string): Promise<SiteImages | null> {
-  const current = await load();
-  if (!current.gallery.some((image) => image.id === id)) return null;
+  await load();
+  if (deleteById.run(id).changes === 0) return null;
 
-  const next: SiteImages = {
-    ...current,
-    gallery: current.gallery.filter((image) => image.id !== id),
-  };
-
-  await persist(next);
+  const next = readStore()!;
   await removeOrphans(next);
   return next;
 }
 
 /** Edits a description, wherever in the store that image lives. */
 export async function updateAlt(id: string, alt: string): Promise<SiteImages | null> {
-  const current = await load();
-  if (!allImages(current).some((image) => image.id === id)) return null;
-
-  const retag = (image: SiteImage): SiteImage => (image.id === id ? { ...image, alt } : image);
-
-  const explore = {} as Record<ExploreSlug, SiteImage>;
-  exploreSlugs.forEach((slug) => {
-    explore[slug] = retag(current.explore[slug]);
-  });
-
-  const next: SiteImages = {
-    hero: retag(current.hero),
-    lifestyle: retag(current.lifestyle),
-    gallery: current.gallery.map(retag),
-    explore,
-  };
-
-  await persist(next);
-  return next;
+  await load();
+  if (setAlt.run(alt, id).changes === 0) return null;
+  return readStore()!;
 }
 
 /** Reorders the gallery to match `ids`; rejects anything but a permutation. */
@@ -296,11 +304,10 @@ export async function reorderGallery(ids: string[]): Promise<SiteImages | null> 
   const sameSet = ids.length === currentIds.length && ids.every((id) => currentIds.includes(id));
   if (!sameSet) return null;
 
-  const byId = new Map(current.gallery.map((image) => [image.id, image]));
-  const next: SiteImages = { ...current, gallery: ids.map((id) => byId.get(id)!) };
-
-  await persist(next);
-  return next;
+  db.transaction(() => {
+    ids.forEach((id, index) => setPosition.run(index, id));
+  })();
+  return readStore()!;
 }
 
 /** Deletes upload files no record points at any more. */

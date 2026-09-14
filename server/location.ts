@@ -1,41 +1,24 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { db } from "./db";
 import { defaultLocation, isValidLocation, type VillaLocation } from "../src/lib/location";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const dataFile = join(here, "data", "location.json");
-
-let cache: VillaLocation | null = null;
-let writing: Promise<void> = Promise.resolve();
+/** The map pin, held in a single row so an update can never fork it. */
+const selectPin = db.prepare(`SELECT latitude, longitude, zoom FROM location WHERE id = 1`);
+const upsertPin = db.prepare(`
+  INSERT INTO location (id, latitude, longitude, zoom) VALUES (1, @latitude, @longitude, @zoom)
+  ON CONFLICT (id) DO UPDATE SET latitude = @latitude, longitude = @longitude, zoom = @zoom
+`);
 
 export async function readLocation(): Promise<VillaLocation> {
-  if (cache) return cache;
-  try {
-    const raw = await readFile(dataFile, "utf8");
-    const parsed = JSON.parse(raw) as VillaLocation;
-    if (isValidLocation(parsed)) {
-      cache = parsed;
-      return cache;
-    }
-    console.warn(`${dataFile} is not a valid location — using the default.`);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.warn(`Could not read ${dataFile}, using the default:`, error);
-    }
+  const row = selectPin.get() as VillaLocation | undefined;
+  if (!row) return defaultLocation;
+  if (!isValidLocation(row)) {
+    console.warn("The stored location is not valid — using the default.");
+    return defaultLocation;
   }
-  cache = defaultLocation;
-  return cache;
+  return row;
 }
 
 export async function writeLocation(next: VillaLocation): Promise<VillaLocation> {
-  cache = next;
-  writing = writing.then(async () => {
-    await mkdir(dirname(dataFile), { recursive: true });
-    const temp = `${dataFile}.${process.pid}.tmp`;
-    await writeFile(temp, JSON.stringify(next, null, 2), "utf8");
-    await rename(temp, dataFile);
-  });
-  await writing;
+  upsertPin.run(next);
   return next;
 }

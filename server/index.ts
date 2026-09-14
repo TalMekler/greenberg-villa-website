@@ -25,6 +25,7 @@ import {
   normaliseEmail,
   resetPassword,
 } from "./users";
+import { migrateFromJson } from "./db";
 import { readLocation, writeLocation } from "./location";
 import {
   addGalleryImage,
@@ -522,6 +523,10 @@ app.use(
   },
 );
 
+// Move any JSON stores from before the database existed, then make sure there
+// is an account to sign in with. Order matters: the import has to run first, or
+// a fresh env-var account would suppress the imported users.
+migrateFromJson();
 await ensureBootstrapUser();
 
 /** Sets or clears the agreed price on a confirmed booking. */

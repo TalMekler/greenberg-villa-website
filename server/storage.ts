@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { extname } from "node:path";
 
@@ -14,35 +14,43 @@ import { extname } from "node:path";
  */
 export const BUCKET = process.env.SUPABASE_BUCKET ?? "site-images";
 
-const url = process.env.SUPABASE_URL;
 /*
-  Supabase renamed its API keys: what the dashboard used to call the
-  service_role key is now the "secret key". Accept either, newest name first,
-  so the same code works whichever vintage of project it is pointed at.
+  Built on first use for the same reason as the database pool: a module-level
+  throw would take the whole serverless function down before any route — or
+  /api/health — could report what is actually missing.
 
-  Only this one is ever used. The publishable key is for browsers and grants
-  nothing here, and SUPABASE_JWKS_URL belongs to Supabase Auth, which this app
-  does not use — it keeps its own accounts, with scrypt hashes, in the `users`
-  table.
+  Only the secret key is ever used here. The publishable key is for browsers
+  and grants nothing, and SUPABASE_JWKS_URL belongs to Supabase Auth, which
+  this app does not use — it keeps its own accounts, with scrypt hashes, in the
+  `users` table. Supabase renamed service_role to "secret key"; both names are
+  accepted, newest first.
 */
-const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !serviceKey) {
-  throw new Error(
-    "SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) are not set. " +
-      "Copy them from the Supabase dashboard — see the README section 'Where the data lives'.",
-  );
-}
+let client: SupabaseClient | null = null;
 
-export const supabase = createClient(url, serviceKey, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+export function supabase(): SupabaseClient {
+  if (client) return client;
+
+  const url = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) {
+    throw new Error(
+      "SUPABASE_URL and SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY) are not set. " +
+        "Copy them from the Supabase dashboard — see the README section 'Where the data lives'.",
+    );
+  }
+
+  client = createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return client;
+}
 
 /** Creates the bucket on first run. Harmless once it exists. */
 export async function ensureBucket(): Promise<void> {
-  const { data } = await supabase.storage.getBucket(BUCKET);
+  const { data } = await supabase().storage.getBucket(BUCKET);
   if (data) return;
 
-  const { error } = await supabase.storage.createBucket(BUCKET, { public: true });
+  const { error } = await supabase().storage.createBucket(BUCKET, { public: true });
   // A parallel boot may have won the race; that is not a failure.
   if (error && !/already exists/i.test(error.message)) throw error;
   console.log(`Created the public storage bucket "${BUCKET}".`);
@@ -58,7 +66,7 @@ const extensionFor = (mimeType: string, originalName: string): string => {
 };
 
 export function publicUrl(path: string): string {
-  return supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  return supabase().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
 }
 
 /** Puts bytes in the bucket under a generated name and returns its public URL. */
@@ -68,7 +76,7 @@ export async function upload(
   mimeType: string,
 ): Promise<{ path: string; url: string }> {
   const path = `${randomUUID()}${extensionFor(mimeType, originalName)}`;
-  const { error } = await supabase.storage
+  const { error } = await supabase().storage
     .from(BUCKET)
     .upload(path, buffer, { contentType: mimeType, upsert: false });
   if (error) throw error;
@@ -85,13 +93,13 @@ export function pathFromUrl(fileUrl: string): string | null {
 
 export async function remove(paths: string[]): Promise<void> {
   if (paths.length === 0) return;
-  const { error } = await supabase.storage.from(BUCKET).remove(paths);
+  const { error } = await supabase().storage.from(BUCKET).remove(paths);
   if (error) console.warn("Could not remove unused uploads:", error.message);
 }
 
 /** Everything currently in the bucket, for the orphan sweep. */
 export async function listAll(): Promise<string[]> {
-  const { data, error } = await supabase.storage.from(BUCKET).list("", { limit: 1000 });
+  const { data, error } = await supabase().storage.from(BUCKET).list("", { limit: 1000 });
   if (error) {
     console.warn("Could not list the bucket:", error.message);
     return [];

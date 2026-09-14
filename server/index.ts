@@ -71,6 +71,73 @@ const port = Number(process.env.API_PORT ?? 3001);
 
 app.use(express.json({ limit: "32kb" }));
 
+/*
+  Schema, bucket and the first account are set up once per instance, lazily.
+
+  Doing it with top-level await instead meant that any failure — a missing
+  DATABASE_URL, a password Postgres rejects — threw while the module was being
+  imported. On Vercel that surfaces as FUNCTION_INVOCATION_FAILED with no
+  message at all, which is indistinguishable from a broken deployment. Behind a
+  promise, the same failure becomes a 503 with a reason, and the next request
+  retries rather than being stuck with a poisoned module.
+*/
+let startup: Promise<void> | null = null;
+
+function ready(): Promise<void> {
+  startup ??= (async () => {
+    await ensureSchema();
+    await ensureBucket();
+    await ensureBootstrapUser();
+  })().catch((error: unknown) => {
+    startup = null; // let the next request try again
+    throw error;
+  });
+  return startup;
+}
+
+/**
+ * Reports what the server can see, without disclosing any of it: which
+ * variables are set, and the driver's error *code* if a connection fails.
+ * Enough to tell a missing variable from a rejected password from a DNS
+ * failure, with nothing in it worth leaking.
+ */
+app.get("/api/health", async (_request, response) => {
+  const env = {
+    DATABASE_URL: Boolean(process.env.DATABASE_URL),
+    SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
+    SUPABASE_SECRET_KEY: Boolean(
+      process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
+    ),
+    ADMIN_EMAIL: Boolean(process.env.ADMIN_EMAIL ?? process.env.ADMIN_USERNAME),
+    ADMIN_PASSWORD: Boolean(process.env.ADMIN_PASSWORD),
+  };
+
+  let startupState = "ok";
+  let code: string | undefined;
+  try {
+    await ready();
+  } catch (error) {
+    startupState = "failed";
+    const problem = error as { code?: string; name?: string };
+    code = problem.code ?? problem.name ?? "unknown";
+  }
+
+  response.status(startupState === "ok" ? 200 : 503).json({ env, startup: startupState, code });
+});
+
+/** Everything else waits for that setup, and reports plainly if it failed. */
+app.use("/api", async (_request, response, next) => {
+  try {
+    await ready();
+    next();
+  } catch (error) {
+    console.error("Startup failed:", error);
+    response.status(503).json({
+      error: "The server could not reach its database. Check /api/health.",
+    });
+  }
+});
+
 /**
  * Uploads are held in memory, checked, then written under a generated name — the
  * client's filename never touches the filesystem.
@@ -521,10 +588,6 @@ app.use(
   },
 );
 
-// Tables and bucket first, then make sure there is an account to sign in with.
-await ensureSchema();
-await ensureBucket();
-await ensureBootstrapUser();
 
 /** Sets or clears the agreed price on a confirmed booking. */
 app.patch("/api/inquiries/:id/price", requireSettledPassword, async (request, response) => {

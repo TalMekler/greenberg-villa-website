@@ -83,7 +83,7 @@ for (const name of files) {
   const contentType =
     extname(name) === ".png" ? "image/png" : extname(name) === ".webp" ? "image/webp" : "image/jpeg";
 
-  const { error } = await supabase.storage
+  const { error } = await supabase().storage
     .from(BUCKET)
     .upload(name, bytes, { contentType, upsert: true });
   if (error) throw new Error(`Uploading ${name}: ${error.message}`);

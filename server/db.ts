@@ -9,28 +9,43 @@ import pg from "pg";
  * pooled one (port 6543) for the running server: Supabase caps direct
  * connections, and a pool of five would eat a meaningful share of them.
  */
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error(
-    "DATABASE_URL is not set. Copy the Supabase connection string into .env — " +
-      "see the README section 'Where the data lives'.",
-  );
-}
+/*
+  The pool is built on first use, not at import. A module-level throw would kill
+  the serverless function before any route could run, so a missing variable
+  would look identical to a crashed deployment — including to /api/health,
+  whose whole job is to tell those apart.
+*/
+let cached: pg.Pool | null = null;
 
-export const pool = new pg.Pool({
-  connectionString,
-  max: 5,
-  idleTimeoutMillis: 30_000,
-  // Supabase terminates TLS with its own CA, which Node does not ship.
-  ssl: { rejectUnauthorized: false },
-});
+export function pool(): pg.Pool {
+  if (cached) return cached;
+
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL is not set. Copy the Supabase connection string into the " +
+        "environment — see the README section 'Where the data lives'.",
+    );
+  }
+
+  cached = new pg.Pool({
+    connectionString,
+    // Serverless: many short-lived instances, each wanting very few connections.
+    max: 2,
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 10_000,
+    // Supabase terminates TLS with its own CA, which Node does not ship.
+    ssl: { rejectUnauthorized: false },
+  });
+  return cached;
+}
 
 /** Runs a statement and hands back the rows, typed by the caller. */
 export async function query<T extends pg.QueryResultRow = pg.QueryResultRow>(
   text: string,
   values: unknown[] = [],
 ): Promise<T[]> {
-  const result = await pool.query<T>(text, values);
+  const result = await pool().query<T>(text, values);
   return result.rows;
 }
 
@@ -51,7 +66,7 @@ export async function queryOne<T extends pg.QueryResultRow = pg.QueryResultRow>(
 export async function transaction<T>(
   work: (run: (text: string, values?: unknown[]) => Promise<pg.QueryResult>) => Promise<T>,
 ): Promise<T> {
-  const client = await pool.connect();
+  const client = await pool().connect();
   try {
     await client.query("BEGIN");
     const result = await work((text, values = []) => client.query(text, values));
@@ -183,5 +198,6 @@ async function lockDown(): Promise<void> {
 }
 
 export async function closeDb(): Promise<void> {
-  await pool.end();
+  if (cached) await cached.end();
+  cached = null;
 }

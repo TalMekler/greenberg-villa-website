@@ -1,12 +1,7 @@
-import { db } from "./db";
+import { query, queryOne } from "./db";
 import type { BookingPrice, Inquiry, InquiryInput, InquiryStatus } from "../src/lib/inquiry";
 
-/**
- * Inquiry storage, backed by the `inquiries` table.
- *
- * The functions stay async so the routes are untouched, even though
- * better-sqlite3 itself is synchronous.
- */
+/** Inquiry storage, backed by the `inquiries` table in Supabase Postgres. */
 
 /** The column layout, before it is folded back into the nested `price`. */
 interface Row {
@@ -21,7 +16,9 @@ interface Row {
   status: InquiryStatus;
   submittedAt: string;
   decidedAt: string | null;
-  priceAmount: number | null;
+  // `numeric` arrives as a string from pg — it is arbitrary precision, so the
+  // driver will not silently round it into a JS number. Parse it ourselves.
+  priceAmount: string | null;
   priceCurrency: string | null;
   priceMode: string | null;
 }
@@ -35,7 +32,7 @@ function toInquiry(row: Row): Inquiry {
     checkIn: row.checkIn,
     checkOut: row.checkOut,
     // The app carries `guests` as a string (it comes from a <select>), but the
-    // column is INTEGER so it can be aggregated in SQL later. Convert on the way out.
+    // column is integer so it can be aggregated in SQL. Convert on the way out.
     guests: String(row.guests),
     message: row.message,
     status: row.status,
@@ -44,7 +41,7 @@ function toInquiry(row: Row): Inquiry {
   if (row.decidedAt) inquiry.decidedAt = row.decidedAt;
   if (row.priceAmount !== null && row.priceCurrency && row.priceMode) {
     inquiry.price = {
-      amount: row.priceAmount,
+      amount: Number(row.priceAmount),
       currency: row.priceCurrency,
       mode: row.priceMode,
     } as BookingPrice;
@@ -52,26 +49,9 @@ function toInquiry(row: Row): Inquiry {
   return inquiry;
 }
 
-const selectAll = db.prepare(`
-  SELECT * FROM inquiries ORDER BY submittedAt DESC
-`);
-const selectOne = db.prepare(`SELECT * FROM inquiries WHERE id = ?`);
-const insert = db.prepare(`
-  INSERT INTO inquiries (id, firstName, lastName, email, checkIn, checkOut,
-                         guests, message, status, submittedAt)
-  VALUES (@id, @firstName, @lastName, @email, @checkIn, @checkOut,
-          @guests, @message, @status, @submittedAt)
-`);
-const updatePrice = db.prepare(`
-  UPDATE inquiries SET priceAmount = @amount, priceCurrency = @currency, priceMode = @mode
-  WHERE id = @id
-`);
-const updateStatusRow = db.prepare(`
-  UPDATE inquiries SET status = @status, decidedAt = @decidedAt WHERE id = @id
-`);
-
 export async function listInquiries(): Promise<Inquiry[]> {
-  return (selectAll.all() as Row[]).map(toInquiry);
+  const rows = await query<Row>(`SELECT * FROM inquiries ORDER BY "submittedAt" DESC`);
+  return rows.map(toInquiry);
 }
 
 export async function createInquiry(input: InquiryInput): Promise<Inquiry> {
@@ -81,35 +61,43 @@ export async function createInquiry(input: InquiryInput): Promise<Inquiry> {
     status: "pending",
     submittedAt: new Date().toISOString(),
   };
-  insert.run({
-    id: inquiry.id,
-    firstName: inquiry.firstName,
-    lastName: inquiry.lastName,
-    email: inquiry.email,
-    checkIn: inquiry.checkIn,
-    checkOut: inquiry.checkOut,
-    guests: inquiry.guests,
-    message: inquiry.message ?? "",
-    status: inquiry.status,
-    submittedAt: inquiry.submittedAt,
-  });
+
+  await query(
+    `INSERT INTO inquiries (id, "firstName", "lastName", email, "checkIn", "checkOut",
+                            guests, message, status, "submittedAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      inquiry.id,
+      inquiry.firstName,
+      inquiry.lastName,
+      inquiry.email,
+      inquiry.checkIn,
+      inquiry.checkOut,
+      Number(inquiry.guests),
+      inquiry.message ?? "",
+      inquiry.status,
+      inquiry.submittedAt,
+    ],
+  );
   return inquiry;
 }
 
 /** Sets or clears the agreed price on a booking. */
 export async function setPrice(id: string, price: BookingPrice | null): Promise<Inquiry | null> {
-  const result = updatePrice.run({
-    id,
-    amount: price?.amount ?? null,
-    currency: price?.currency ?? null,
-    mode: price?.mode ?? null,
-  });
-  if (result.changes === 0) return null;
-  return toInquiry(selectOne.get(id) as Row);
+  const row = await queryOne<Row>(
+    `UPDATE inquiries
+        SET "priceAmount" = $2, "priceCurrency" = $3, "priceMode" = $4
+      WHERE id = $1
+      RETURNING *`,
+    [id, price?.amount ?? null, price?.currency ?? null, price?.mode ?? null],
+  );
+  return row ? toInquiry(row) : null;
 }
 
 export async function updateStatus(id: string, status: InquiryStatus): Promise<Inquiry | null> {
-  const result = updateStatusRow.run({ id, status, decidedAt: new Date().toISOString() });
-  if (result.changes === 0) return null;
-  return toInquiry(selectOne.get(id) as Row);
+  const row = await queryOne<Row>(
+    `UPDATE inquiries SET status = $2, "decidedAt" = $3 WHERE id = $1 RETURNING *`,
+    [id, status, new Date().toISOString()],
+  );
+  return row ? toInquiry(row) : null;
 }

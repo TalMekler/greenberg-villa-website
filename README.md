@@ -94,8 +94,9 @@ and `npm run dev:api` if you prefer separate terminals.
 
 ## Where the data lives
 
-One SQLite database, `server/data/villa.db`, created on first use and
-**git-ignored** — it is your data, not part of the repo:
+A Supabase project holds everything: the tables in its Postgres database, the
+photos in a Storage bucket. Nothing that matters is kept on the server's disk,
+so the app can run on a host whose filesystem is wiped on every deploy.
 
 | Table | Contents |
 | --- | --- |
@@ -104,28 +105,51 @@ One SQLite database, `server/data/villa.db`, created on first use and
 | `site_images` | Which photo fills each slot on the site, and gallery order |
 | `location` | The map's centre point and zoom (a single row) |
 
-The uploaded image **files** stay on the filesystem, in `server/data/uploads/`;
-only their metadata is in the database. The driver is
-[better-sqlite3](https://github.com/WiseLibs/better-sqlite3), which ships
-prebuilt binaries for the common platforms — no database service to install or
-run, and `npm install` needs no extra tooling on macOS, Linux or Windows x64.
+The photo **files** live in a public Storage bucket (`site-images` by default),
+and `site_images.url` holds each one's public URL. Public is deliberate: these
+are the villa's marketing photos, every one of them is already on the public
+site, and serving them from Supabase's CDN beats proxying the bytes through
+this server. The service-role key is used only for writes and never reaches
+the browser.
 
-The database runs in WAL mode, so a read never blocks behind a write. To back
-it up, copy `villa.db` (plus `villa.db-wal` if present) while the server is
-stopped. To start over, stop the server, delete `server/data/`, and start again.
+### Connecting
 
-On the very first run the image store seeds itself by copying the photos in
-`src/assets/images/`, so the site looks complete straight away.
+Copy four values from the Supabase dashboard into `.env` (git-ignored):
 
-### Upgrading from the JSON stores
+| Variable | Where to find it |
+| --- | --- |
+| `DATABASE_URL` | Project Settings → Database → Connection string → **Transaction pooler** (port 6543) |
+| `SUPABASE_URL` | Project Settings → API → Project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → `service_role` key |
+| `SUPABASE_BUCKET` | Optional; defaults to `site-images` |
 
-Earlier versions kept four JSON files in `server/data/`. On the first start
-after this change, each one is read into the database and then renamed to
-`<name>.json.imported`. Nothing is deleted, so the originals remain as a
-fallback; you can remove them once you are satisfied the site looks right.
+Use the *pooled* connection string for the running server. Supabase caps direct
+connections, and a pool of five would take a meaningful share of them.
 
-If a file cannot be imported the server logs the reason, leaves that file
-untouched and still starts — the other stores are unaffected.
+Tables and the bucket are created on first boot, and on a first run with no
+photos the store seeds itself from `src/assets/images/`, so the site looks
+complete straight away.
+
+### Migrating from the local SQLite database
+
+Earlier versions kept `server/data/villa.db` and `server/data/uploads/`. To move
+that into Supabase, set the four variables above and run:
+
+```bash
+npm run migrate:supabase -- --dry   # report what would move, change nothing
+npm run migrate:supabase            # do it
+```
+
+It uploads the files first, then writes all four tables in a single
+transaction, rewriting every `site_images.url` to its new bucket URL. It
+refuses to run if the Supabase tables already hold rows, so it cannot duplicate
+anything, and it deletes nothing locally — `villa.db` and `uploads/` stay put
+as your fallback. Afterwards it verifies row counts, that the password hashes
+came across unchanged, and that no image URL was left pointing at the old
+`/api/media` path.
+
+Links minted before the move still work: `/api/media/<file>` now answers with a
+permanent redirect to the same object in the bucket.
 
 ## Deploying
 
@@ -139,8 +163,9 @@ long-running process (`npm start`). Two things to set up on the host:
    `NODE_ENV=production` so the session cookie is marked `secure`. Serve the
    whole thing over HTTPS.
 
-Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in the host's environment for the first
-run, and `API_PORT` if `3001` is taken. `API_PORT` deliberately is not `PORT`,
+Set `DATABASE_URL`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the
+host's environment, plus `ADMIN_EMAIL` and `ADMIN_PASSWORD` for the first run,
+and `API_PORT` if `3001` is taken. `API_PORT` deliberately is not `PORT`,
 which many hosts set for the web process.
 
 ## Troubleshooting

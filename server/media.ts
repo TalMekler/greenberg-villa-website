@@ -1,8 +1,8 @@
-import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
-import { dirname, extname, join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { db } from "./db";
+import { query, transaction } from "./db";
+import { listAll, pathFromUrl, remove, upload } from "./storage";
 import {
   exploreSlugs,
   type ExploreSlug,
@@ -12,12 +12,11 @@ import {
 } from "../src/lib/site-images";
 
 const here = dirname(fileURLToPath(import.meta.url));
-export const uploadsDir = join(here, "data", "uploads");
 
 /**
- * Photo records live in the `site_images` table; the files themselves stay on
- * disk under `data/uploads`. The images below ship in the repo purely to seed
- * the table on a first run — the app itself reads uploads, not these.
+ * Photo records live in the `site_images` table; the files themselves are in a
+ * Supabase Storage bucket, and `url` is their public URL. The images below ship
+ * in the repo purely to seed an empty store on a first run.
  */
 const defaultsDir = join(here, "..", "src", "assets", "images");
 
@@ -70,25 +69,11 @@ const exploreDefaults: Record<ExploreSlug, { file: string; alt: string }> = {
 };
 
 /*
-  Reads are a three-row-per-slot query, so they are not cached. Seeding is, via
-  an in-flight promise: without it two requests arriving on an empty store both
-  seed, each writing its own copy of every file, and the loser's orphan sweep
-  then deletes files the winner's rows point at.
+  Seeding is guarded by an in-flight promise: without it two requests arriving
+  on an empty store both seed, each uploading its own copy of every file, and
+  the loser's orphan sweep then deletes objects the winner's rows point at.
 */
 let seeding: Promise<SiteImages> | null = null;
-
-export function mediaUrl(fileName: string): string {
-  return `/api/media/${fileName}`;
-}
-
-function fileNameFor(image: SiteImage): string {
-  return image.url.replace("/api/media/", "");
-}
-
-/** Every record in the store, whatever slot it sits in. */
-function allImages(images: SiteImages): SiteImage[] {
-  return [images.hero, images.lifestyle, ...images.gallery, ...Object.values(images.explore)];
-}
 
 interface Row {
   id: string;
@@ -101,22 +86,15 @@ interface Row {
 
 const toImage = ({ id, url, alt, uploadedAt }: Row): SiteImage => ({ id, url, alt, uploadedAt });
 
-const selectAll = db.prepare(`SELECT * FROM site_images ORDER BY slot, position`);
-const insertImage = db.prepare(`
-  INSERT INTO site_images (id, slot, position, url, alt, uploadedAt)
-  VALUES (@id, @slot, @position, @url, @alt, @uploadedAt)
-`);
-const deleteSlot = db.prepare(`DELETE FROM site_images WHERE slot = ?`);
-const deleteById = db.prepare(`DELETE FROM site_images WHERE id = ?`);
-const setAlt = db.prepare(`UPDATE site_images SET alt = ? WHERE id = ?`);
-const setPosition = db.prepare(`UPDATE site_images SET position = ? WHERE id = ?`);
-const nextGalleryPosition = db.prepare(`
-  SELECT coalesce(max(position), -1) + 1 AS next FROM site_images WHERE slot = 'gallery'
-`);
+/** Every record in the store, whatever slot it sits in. */
+function allImages(images: SiteImages): SiteImage[] {
+  return [images.hero, images.lifestyle, ...images.gallery, ...Object.values(images.explore)];
+}
 
 /** Builds the API shape from the table, or null when a slot has no row yet. */
-function readStore(): SiteImages | null {
-  const rows = selectAll.all() as Row[];
+async function readStore(): Promise<SiteImages | null> {
+  const rows = await query<Row>(`SELECT * FROM site_images ORDER BY slot, position`);
+
   const bySlot = new Map<string, Row[]>();
   for (const row of rows) {
     const list = bySlot.get(row.slot);
@@ -143,14 +121,13 @@ function readStore(): SiteImages | null {
   };
 }
 
-/** Copies a shipped default into the uploads dir and returns its record. */
+/** Uploads a shipped default into the bucket and returns its record. */
 async function seedFrom(sourceName: string, alt: string): Promise<SiteImage> {
-  const id = randomUUID();
-  const fileName = `${id}${extname(sourceName)}`;
-  await mkdir(uploadsDir, { recursive: true });
-  await copyFile(join(defaultsDir, sourceName), join(uploadsDir, fileName));
+  const bytes = await readFile(join(defaultsDir, sourceName));
+  const mime = sourceName.endsWith(".png") ? "image/png" : "image/jpeg";
+  const { url } = await upload(bytes, sourceName, mime);
 
-  return { id, url: mediaUrl(fileName), alt, uploadedAt: new Date().toISOString() };
+  return { id: crypto.randomUUID(), url, alt, uploadedAt: new Date().toISOString() };
 }
 
 /**
@@ -177,12 +154,18 @@ async function seed(): Promise<SiteImages> {
   }
 
   // One transaction: the table either gains a complete set of photos or none.
-  db.transaction(() => {
-    db.prepare(`DELETE FROM site_images`).run();
-    for (const row of rows) insertImage.run(row);
-  })();
+  await transaction(async (run) => {
+    await run(`DELETE FROM site_images`);
+    for (const row of rows) {
+      await run(
+        `INSERT INTO site_images (id, slot, position, url, alt, "uploadedAt")
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [row.id, row.slot, row.position, row.url, row.alt, row.uploadedAt],
+      );
+    }
+  });
 
-  const seeded = readStore();
+  const seeded = await readStore();
   if (!seeded) throw new Error("Seeding did not produce a complete image store");
 
   await removeOrphans(seeded);
@@ -191,7 +174,7 @@ async function seed(): Promise<SiteImages> {
 }
 
 async function load(): Promise<SiteImages> {
-  const current = readStore();
+  const current = await readStore();
   if (current) return current;
 
   seeding ??= seed().finally(() => {
@@ -204,32 +187,22 @@ export async function listSiteImages(): Promise<SiteImages> {
   return load();
 }
 
-/** Writes the uploaded bytes under a generated name — the client's is never used. */
-async function store(buffer: Buffer, originalName: string, mimeType: string): Promise<SiteImage> {
-  const byMime: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/webp": ".webp",
-  };
-  const extension = byMime[mimeType] ?? (extname(originalName).toLowerCase() || ".jpg");
-  const fileName = `${randomUUID()}${extension}`;
-  await mkdir(uploadsDir, { recursive: true });
-  await writeFile(join(uploadsDir, fileName), buffer);
-
-  return {
-    id: randomUUID(),
-    url: mediaUrl(fileName),
-    alt: "",
-    uploadedAt: new Date().toISOString(),
-  };
+/** Swaps the single row held by `slot` for a freshly uploaded one. */
+async function replaceSlot(slot: string, image: SiteImage): Promise<void> {
+  await transaction(async (run) => {
+    await run(`DELETE FROM site_images WHERE slot = $1`, [slot]);
+    await run(
+      `INSERT INTO site_images (id, slot, position, url, alt, "uploadedAt")
+       VALUES ($1, $2, 0, $3, $4, $5)`,
+      [image.id, slot, image.url, image.alt, image.uploadedAt],
+    );
+  });
 }
 
-/** Swaps the single row held by `slot` for a freshly uploaded one. */
-function replaceSlot(slot: string, image: SiteImage): void {
-  db.transaction(() => {
-    deleteSlot.run(slot);
-    insertImage.run({ ...image, slot, position: 0 });
-  })();
+/** Puts the uploaded bytes in the bucket under a generated name. */
+async function store(buffer: Buffer, originalName: string, mimeType: string): Promise<SiteImage> {
+  const { url } = await upload(buffer, originalName, mimeType);
+  return { id: crypto.randomUUID(), url, alt: "", uploadedAt: new Date().toISOString() };
 }
 
 /** Replaces one of the single-slot photos (hero, lifestyle). */
@@ -243,8 +216,8 @@ export async function replaceSingle(
   const current = await load();
   const image = await store(buffer, originalName, mimeType);
 
-  replaceSlot(key, { ...image, alt: alt || current[key].alt });
-  const next = readStore()!;
+  await replaceSlot(key, { ...image, alt: alt || current[key].alt });
+  const next = (await readStore())!;
   await removeOrphans(next);
   return next;
 }
@@ -260,8 +233,8 @@ export async function replaceExplore(
   const current = await load();
   const image = await store(buffer, originalName, mimeType);
 
-  replaceSlot(slug, { ...image, alt: alt || current.explore[slug].alt });
-  const next = readStore()!;
+  await replaceSlot(slug, { ...image, alt: alt || current.explore[slug].alt });
+  const next = (await readStore())!;
   await removeOrphans(next);
   return next;
 }
@@ -274,17 +247,22 @@ export async function addGalleryImage(
 ): Promise<SiteImages> {
   await load();
   const image = await store(buffer, originalName, mimeType);
-  const { next } = nextGalleryPosition.get() as { next: number };
 
-  insertImage.run({ ...image, alt, slot: "gallery", position: next });
-  return readStore()!;
+  await query(
+    `INSERT INTO site_images (id, slot, position, url, alt, "uploadedAt")
+     SELECT $1, 'gallery', coalesce(max(position), -1) + 1, $2, $3, $4
+       FROM site_images WHERE slot = 'gallery'`,
+    [image.id, image.url, alt, image.uploadedAt],
+  );
+  return (await readStore())!;
 }
 
 export async function removeGalleryImage(id: string): Promise<SiteImages | null> {
   await load();
-  if (deleteById.run(id).changes === 0) return null;
+  const deleted = await query(`DELETE FROM site_images WHERE id = $1 RETURNING id`, [id]);
+  if (deleted.length === 0) return null;
 
-  const next = readStore()!;
+  const next = (await readStore())!;
   await removeOrphans(next);
   return next;
 }
@@ -292,8 +270,12 @@ export async function removeGalleryImage(id: string): Promise<SiteImages | null>
 /** Edits a description, wherever in the store that image lives. */
 export async function updateAlt(id: string, alt: string): Promise<SiteImages | null> {
   await load();
-  if (setAlt.run(alt, id).changes === 0) return null;
-  return readStore()!;
+  const updated = await query(`UPDATE site_images SET alt = $2 WHERE id = $1 RETURNING id`, [
+    id,
+    alt,
+  ]);
+  if (updated.length === 0) return null;
+  return (await readStore())!;
 }
 
 /** Reorders the gallery to match `ids`; rejects anything but a permutation. */
@@ -304,23 +286,21 @@ export async function reorderGallery(ids: string[]): Promise<SiteImages | null> 
   const sameSet = ids.length === currentIds.length && ids.every((id) => currentIds.includes(id));
   if (!sameSet) return null;
 
-  db.transaction(() => {
-    ids.forEach((id, index) => setPosition.run(index, id));
-  })();
-  return readStore()!;
+  await transaction(async (run) => {
+    for (const [index, id] of ids.entries()) {
+      await run(`UPDATE site_images SET position = $2 WHERE id = $1`, [id, index]);
+    }
+  });
+  return (await readStore())!;
 }
 
-/** Deletes upload files no record points at any more. */
+/** Deletes bucket objects no record points at any more. */
 async function removeOrphans(current: SiteImages): Promise<void> {
-  const referenced = new Set(allImages(current).map(fileNameFor));
-  try {
-    const files = await readdir(uploadsDir);
-    await Promise.all(
-      files
-        .filter((file) => !referenced.has(file))
-        .map((file) => rm(join(uploadsDir, file), { force: true })),
-    );
-  } catch (error) {
-    console.warn("Could not clean up unused uploads:", error);
-  }
+  const referenced = new Set(
+    allImages(current)
+      .map((image) => pathFromUrl(image.url))
+      .filter((path): path is string => path !== null),
+  );
+  const stale = (await listAll()).filter((name) => !referenced.has(name));
+  await remove(stale);
 }

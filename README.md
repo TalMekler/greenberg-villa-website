@@ -123,8 +123,26 @@ Copy four values from the Supabase dashboard into `.env` (git-ignored):
 | `SUPABASE_SECRET_KEY` | Project Settings → API keys → secret key (older projects: `service_role`; `SUPABASE_SERVICE_ROLE_KEY` is still accepted) |
 | `SUPABASE_BUCKET` | Optional; defaults to `site-images` |
 
-Use the *pooled* connection string for the running server. Supabase caps direct
-connections, and a pool of five would take a meaningful share of them.
+Use the **pooled** connection string, not the direct one. Two reasons, and the
+second one is fatal rather than merely wasteful:
+
+- Supabase caps direct connections, and serverless opens many short-lived ones.
+- `db.<ref>.supabase.co`, the direct host, publishes **no A record** — it is
+  IPv6-only. Vercel's functions are IPv4, so they cannot resolve it at all, and
+  the API fails at startup with `ENOTFOUND`.
+
+The pooled URI differs in three places, all easy to miss when typing it by hand:
+
+```
+postgresql://postgres.<ref>:<password>@aws-N-<region>.pooler.supabase.com:6543/postgres
+             ^^^^^^^^^^^^^^                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^
+             user carries the ref          pooler host, not db.<ref>          6543
+```
+
+`GET /api/health` reports which variables the server can see and the driver's
+error code if it cannot connect — enough to tell a missing variable from a
+rejected password (`28P01`) from this DNS failure (`ENOTFOUND`), without
+putting anything sensitive in a public response.
 
 Tables and the bucket are created on first boot, and on a first run with no
 photos the store seeds itself from `src/assets/images/`, so the site looks

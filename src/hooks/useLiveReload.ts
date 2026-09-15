@@ -1,19 +1,21 @@
 import { useEffect, useRef } from "react";
 import { watchTables, type WatchedTable } from "../lib/realtime";
 
-/** How often to re-check when the live connection is unavailable. */
-const POLL_MS = 30_000;
+/** Only used while the socket is down. Nothing is timed while it is up. */
+const RECONNECT_POLL_MS = 30_000;
 /** Changes arriving together — a status edit fires several — collapse into one reload. */
 const SETTLE_MS = 250;
 
 /**
- * Keeps `reload` in step with the database.
+ * Keeps `reload` in step with the database, over the socket.
  *
- * Live changes to the watched tables trigger it, and a poll runs as a safety
- * net whenever the socket is not connected — a blocked WebSocket, a sleeping
- * laptop, a deployment without the keys. Polling stops while the tab is hidden,
- * and one reload runs on the way back, so a tab left open overnight does not
- * spend the night making requests.
+ * Updates arrive as Supabase Realtime events; there is no timer while the
+ * connection is up. The interval below exists only for the case where the
+ * socket cannot be established or drops — a blocked WebSocket, a corporate
+ * proxy, a deployment without the keys — and it is started and stopped by the
+ * channel's own status, so a healthy connection means no periodic requests at
+ * all. A hidden tab reloads once on the way back, since the socket may have
+ * been closed while it was away.
  */
 export function useLiveReload(tables: WatchedTable[], reload: () => void | Promise<void>): void {
   // Kept in a ref so a caller passing an inline function cannot resubscribe on
@@ -27,8 +29,8 @@ export function useLiveReload(tables: WatchedTable[], reload: () => void | Promi
 
   useEffect(() => {
     const watched = key.split(",") as WatchedTable[];
-    let live = false;
     let settle: ReturnType<typeof setTimeout> | undefined;
+    let fallback: ReturnType<typeof setInterval> | undefined;
 
     const run = () => void latest.current();
     const debounced = () => {
@@ -37,15 +39,17 @@ export function useLiveReload(tables: WatchedTable[], reload: () => void | Promi
     };
 
     const stopWatching = watchTables(watched, debounced, (connected) => {
-      live = connected;
+      if (connected) {
+        // Live: drop the fallback entirely rather than letting it tick.
+        clearInterval(fallback);
+        fallback = undefined;
+        return;
+      }
+      fallback ??= setInterval(() => {
+        if (document.visibilityState === "visible") run();
+      }, RECONNECT_POLL_MS);
     });
 
-    const poll = setInterval(() => {
-      if (!live && document.visibilityState === "visible") run();
-    }, POLL_MS);
-
-    // Coming back to a tab is the moment stale content is most obvious, and the
-    // socket may have dropped while it was hidden.
     const onVisible = () => {
       if (document.visibilityState === "visible") run();
     };
@@ -53,7 +57,7 @@ export function useLiveReload(tables: WatchedTable[], reload: () => void | Promi
 
     return () => {
       clearTimeout(settle);
-      clearInterval(poll);
+      clearInterval(fallback);
       document.removeEventListener("visibilitychange", onVisible);
       stopWatching();
     };

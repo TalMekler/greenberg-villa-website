@@ -7,11 +7,12 @@ import { createClient, type RealtimeChannel, type SupabaseClient } from "@supaba
  * own API — which stays the single source of truth for shape, validation and
  * what a visitor is allowed to see. The subscription is a doorbell, not a door.
  *
- * Three tables are watched, all of them already public: the booked dates (a
- * PII-free projection of approved stays, maintained by a trigger), the photo
- * records, and the map pin. Guest details are never exposed.
+ * Every watched table is free of guest data by construction: the booked dates
+ * and the inquiry pulse are both trigger-maintained projections that carry no
+ * name, email or message, and the photo records and map pin are already public.
+ * `inquiries` itself is never watched.
  */
-export type WatchedTable = "booked_dates" | "site_images" | "location";
+export type WatchedTable = "booked_dates" | "site_images" | "location" | "inquiry_pulse";
 
 let clientPromise: Promise<SupabaseClient | null> | null = null;
 

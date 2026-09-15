@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { hasConflict, stayDateKeys } from "../../../data/availability";
 import { useInquiries } from "../../../hooks/useInquiries";
 import { useLiveReload } from "../../../hooks/useLiveReload";
-import { usePollWhileVisible } from "../../../hooks/usePollWhileVisible";
 import { useSiteImages } from "../../../hooks/useSiteImages";
 import { useVillaLocation } from "../../../hooks/useVillaLocation";
 import { ApiError, deleteInquiry, logout, setInquiryStatus } from "../../../lib/api";
@@ -55,23 +54,18 @@ export function Dashboard({
   const images = imagesOverride ?? siteImages;
 
   /*
-    Keeps the dashboard current while it is left open.
+    Everything here arrives over the socket, including new inquiries.
 
-    Photos and the pin are watched live, so a second admin's edits show up here
-    at once. `booked_dates` is watched too, which catches an approval or a
-    cancellation made elsewhere.
-
-    New inquiries cannot be watched: pushing changes from that table would mean
-    letting the browser read it, and it holds guests' names and emails. Admin
-    sessions are this app's own rather than Supabase's, so there is no way to
-    tell an admin's browser from anyone else's. It is polled instead — and
-    polled unconditionally, not as a fallback, because the live connection
-    covering the other tables would otherwise suppress it.
+    That table cannot be watched directly — the browser may not read guests'
+    names and emails, and an admin session here is this app's own rather than
+    Supabase's, so there is no way to tell an admin's browser from anyone
+    else's. `inquiry_pulse` stands in for it: a single row a trigger bumps on
+    any change, carrying a counter and a timestamp and nothing else. Hearing it
+    move is the cue to re-fetch through the authenticated API.
   */
   useLiveReload(["site_images"], reloadImages);
   useLiveReload(["location"], reloadLocation);
-  useLiveReload(["booked_dates"], reload);
-  usePollWhileVisible(reload, 20_000);
+  useLiveReload(["booked_dates", "inquiry_pulse"], reload);
 
   // Session lapsed mid-session — hand control back to the sign-in screen.
   useEffect(() => {

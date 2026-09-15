@@ -198,7 +198,7 @@ export const en: Dictionary = {
     },
     sent: {
       title: "Request sent",
-      body: "Thank you, {name}. Maria & Nikos have your request and usually reply within 24 hours.",
+      body: "Thank you, {name}. Eti & Zeevik have your request and usually reply within 24 hours.",
       dates: "Dates",
       guests: "Guests",
       replyTo: "We'll reply to",
@@ -206,7 +206,7 @@ export const en: Dictionary = {
     },
     hosts: {
       label: "Your Hosts",
-      names: "Maria & Nikos",
+      names: "Eti & Zeevik",
       quote:
         '"We\'ve been welcoming guests to our beloved family villa on Evia island since 2015."',
     },

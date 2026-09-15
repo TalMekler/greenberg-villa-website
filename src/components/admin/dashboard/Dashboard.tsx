@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { hasConflict, stayDateKeys } from "../../../data/availability";
 import { useInquiries } from "../../../hooks/useInquiries";
+import { useLiveReload } from "../../../hooks/useLiveReload";
 import { useSiteImages } from "../../../hooks/useSiteImages";
 import { useVillaLocation } from "../../../hooks/useVillaLocation";
 import { ApiError, deleteInquiry, logout, setInquiryStatus } from "../../../lib/api";
@@ -51,6 +52,20 @@ export function Dashboard({
   const { location, error: locationError, reload: reloadLocation } = useVillaLocation();
   const [locationOverride, setLocationOverride] = useState<VillaLocation | null>(null);
   const images = imagesOverride ?? siteImages;
+
+  /*
+    Everything here arrives over the socket, including new inquiries.
+
+    That table cannot be watched directly — the browser may not read guests'
+    names and emails, and an admin session here is this app's own rather than
+    Supabase's, so there is no way to tell an admin's browser from anyone
+    else's. `inquiry_pulse` stands in for it: a single row a trigger bumps on
+    any change, carrying a counter and a timestamp and nothing else. Hearing it
+    move is the cue to re-fetch through the authenticated API.
+  */
+  useLiveReload(["site_images"], reloadImages);
+  useLiveReload(["location"], reloadLocation);
+  useLiveReload(["booked_dates", "inquiry_pulse"], reload);
 
   // Session lapsed mid-session — hand control back to the sign-in screen.
   useEffect(() => {

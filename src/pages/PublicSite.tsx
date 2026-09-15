@@ -11,6 +11,7 @@ import { Location } from "../components/sections/location";
 import { Transit } from "../components/sections/Transit";
 import { Loader } from "../components/ui/Loader";
 import { useAvailability } from "../hooks/useAvailability";
+import { useLiveReload } from "../hooks/useLiveReload";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import type { Stay } from "../lib/stay";
 import { useLanguage } from "../i18n";
@@ -29,14 +30,22 @@ export default function PublicSite() {
   const { t, language } = useLanguage();
   const [stay, setStay] = useState<Stay | null>(null);
   // Hero and gallery photos are managed in the admin.
-  const { images, loading: imagesLoading } = useSiteImages();
-  const { location, loading: locationLoading } = useVillaLocation();
+  const { images, loading: imagesLoading, reload: reloadImages } = useSiteImages();
+  const { location, loading: locationLoading, reload: reloadLocation } = useVillaLocation();
   // Lifted out of the Availability section so this page can see every request
   // the first screen depends on, and hold the loader until all of them land.
   const availability = useAvailability();
   // Language is a dependency too: switching it can remount revealed content,
   // and the fresh nodes need observing again.
   useScrollReveal([images, language]);
+
+  // A visitor sitting on the page sees an approval, a swapped photo or a moved
+  // pin without reloading. Each watcher re-fetches from our own API rather than
+  // reading the changed row, so the browser never needs access to anything
+  // beyond the fact that something moved.
+  useLiveReload(["booked_dates"], availability.reload);
+  useLiveReload(["site_images"], reloadImages);
+  useLiveReload(["location"], reloadLocation);
 
   // Which hero has finished decoding, rather than a boolean: comparing it with
   // the current URL derives "painted" during render, so a changed hero resets

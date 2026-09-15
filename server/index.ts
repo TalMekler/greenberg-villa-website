@@ -444,6 +444,26 @@ app.post("/api/users/:id/password", requireSettledPassword, async (request, resp
   response.json({ user: await getById(id) });
 });
 
+/**
+ * What the browser needs to open a live connection to Supabase.
+ *
+ * Served rather than baked in at build time, so the deployment needs no
+ * VITE_-prefixed copies of variables it already has, and rotating the key does
+ * not mean rebuilding the site.
+ *
+ * The publishable key is designed to be public — it is the one meant to ship in
+ * browsers. It can read exactly three tables, all of them already public: the
+ * booked dates, the photo records and the map pin. Everything else is behind
+ * row-level security with no policy.
+ */
+app.get("/api/realtime-config", (_request, response) => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY;
+
+  // Absent is a valid answer: the front end falls back to polling.
+  response.json(url && key ? { url, key } : { url: null, key: null });
+});
+
 app.get("/api/availability", async (_request, response) => {
   const inquiries = await listInquiries();
   response.json({ bookedDates: [...bookedDateKeys(inquiries)].sort() });

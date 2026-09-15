@@ -169,6 +169,42 @@ came across unchanged, and that no image URL was left pointing at the old
 Links minted before the move still work: `/api/media/<file>` now answers with a
 permanent redirect to the same object in the bucket.
 
+## Live updates
+
+An open page follows the database without being reloaded: approve a booking and
+the calendar greys out those days, swap a photo and it changes, move the pin and
+the map follows.
+
+The browser subscribes to Supabase Realtime with the **publishable** key and
+watches three tables — `booked_dates`, `site_images` and `location`. Nothing is
+read through that connection. A change arrives, and the app re-fetches from this
+API, which stays the single source of truth for shape and for what a visitor may
+see. The subscription is a doorbell, not a door.
+
+`inquiries` is never watched. Pushing its changes would mean letting the browser
+read it, and it holds guests' names, emails and messages. Two trigger-maintained
+stand-ins carry the signal instead, neither holding any guest data:
+`booked_dates`, which is the days an approved stay occupies — already shown to
+everyone by the calendar — and `inquiry_pulse`, a single row bumped whenever
+anything in `inquiries` changes, carrying a counter and a timestamp. The
+dashboard hears the pulse move and re-fetches through the authenticated API.
+Verified with the publishable key:
+
+| Table | Readable with the public key |
+| --- | --- |
+| `booked_dates`, `inquiry_pulse`, `site_images`, `location` | yes, by design |
+| `inquiries`, `users`, `sessions`, `login_attempts` | no — `42501` |
+
+Nothing is on a timer while the socket is up — not on the site, not in the
+dashboard. A 30-second poll is started only when the channel reports that it
+could not connect or has dropped, and is torn down again the moment it
+reconnects. A hidden tab reloads once when it is brought back, since the socket
+may have closed while it was away.
+
+`/api/realtime-config` serves the browser its URL and publishable key, so no
+`VITE_`-prefixed variables are needed and rotating the key does not mean
+rebuilding.
+
 ## Deploying
 
 The whole thing runs on Vercel: the built SPA as static files, the Express API

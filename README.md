@@ -169,6 +169,38 @@ came across unchanged, and that no image URL was left pointing at the old
 Links minted before the move still work: `/api/media/<file>` now answers with a
 permanent redirect to the same object in the bucket.
 
+## Live updates
+
+An open page follows the database without being reloaded: approve a booking and
+the calendar greys out those days, swap a photo and it changes, move the pin and
+the map follows.
+
+The browser subscribes to Supabase Realtime with the **publishable** key and
+watches three tables — `booked_dates`, `site_images` and `location`. Nothing is
+read through that connection. A change arrives, and the app re-fetches from this
+API, which stays the single source of truth for shape and for what a visitor may
+see. The subscription is a doorbell, not a door.
+
+`inquiries` is never watched. Pushing its changes would mean letting the browser
+read it, and it holds guests' names, emails and messages. `booked_dates` exists
+for exactly this reason: a trigger keeps it in step with the approved stays, and
+it contains days and nothing else — which the calendar already shows to everyone.
+Verified with the publishable key:
+
+| Table | Readable with the public key |
+| --- | --- |
+| `booked_dates`, `site_images`, `location` | yes, by design |
+| `inquiries`, `users`, `sessions`, `login_attempts` | no — `42501` |
+
+Where the socket cannot connect — a blocked WebSocket, a deployment without the
+keys — a 30-second poll takes over, and any hidden tab reloads once when it is
+brought back. The admin's inquiry list is polled unconditionally every twenty
+seconds, since it is the one thing that cannot be watched.
+
+`/api/realtime-config` serves the browser its URL and publishable key, so no
+`VITE_`-prefixed variables are needed and rotating the key does not mean
+rebuilding.
+
 ## Deploying
 
 The whole thing runs on Vercel: the built SPA as static files, the Express API

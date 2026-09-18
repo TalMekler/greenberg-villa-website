@@ -1,4 +1,5 @@
 import type { Inquiry } from "../src/lib/inquiry";
+import type { NotifyResult } from "../src/lib/notify";
 import { listUsers } from "./users";
 
 /*
@@ -20,7 +21,7 @@ const DEFAULT_FROM = "Villa inquiries <onboarding@resend.dev>";
 const TIMEOUT_MS = 8000;
 
 export function notificationsConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY);
+  return Boolean(process.env.RESEND_API_KEY?.trim());
 }
 
 async function recipients(): Promise<string[]> {
@@ -78,29 +79,52 @@ ${rows
   return { subject: `New inquiry: ${name}, ${inquiry.checkIn} → ${inquiry.checkOut}`, text, html };
 }
 
-export async function notifyNewInquiry(inquiry: Inquiry): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
+async function send(inquiry: Inquiry): Promise<NotifyResult> {
+  const from = process.env.NOTIFY_FROM?.trim() || DEFAULT_FROM;
+  // Trimmed: a key pasted into a dashboard easily picks up a trailing space or
+  // newline, which Resend then rejects as invalid.
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return { sent: false, to: [], from, error: "RESEND_API_KEY is not set." };
 
+  let to: string[] = [];
   try {
-    const to = await recipients();
-    if (to.length === 0) return;
+    to = await recipients();
+    if (to.length === 0) return { sent: false, to, from, error: "No one to send to." };
 
     const response = await fetch(RESEND_ENDPOINT, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: process.env.NOTIFY_FROM || DEFAULT_FROM,
-        to,
-        reply_to: inquiry.email,
-        ...render(inquiry),
-      }),
+      body: JSON.stringify({ from, to, reply_to: inquiry.email, ...render(inquiry) }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!response.ok) {
-      console.error(`Inquiry email failed: ${response.status} ${await response.text()}`);
-    }
+    if (response.ok) return { sent: true, to, from };
+
+    const body = (await response.json().catch(() => null)) as { message?: string } | null;
+    const reason = body?.message ?? response.statusText;
+    return { sent: false, to, from, error: `Resend ${response.status}: ${reason}` };
   } catch (error) {
-    console.error("Inquiry email failed:", error);
+    return { sent: false, to, from, error: error instanceof Error ? error.message : String(error) };
   }
+}
+
+export async function notifyNewInquiry(inquiry: Inquiry): Promise<void> {
+  if (!notificationsConfigured()) return;
+  const result = await send(inquiry);
+  if (!result.sent) console.error(`Inquiry email failed: ${result.error}`);
+}
+
+/** Sends a made-up inquiry and reports exactly what the mail provider said. */
+export function sendTestEmail(replyTo: string): Promise<NotifyResult> {
+  return send({
+    id: "test",
+    status: "pending",
+    submittedAt: new Date().toISOString(),
+    firstName: "Test",
+    lastName: "Guest",
+    email: replyTo,
+    checkIn: "2026-10-01",
+    checkOut: "2026-10-05",
+    guests: "2",
+    message: "A test from the admin page. If you can read this, inquiry emails work.",
+  });
 }

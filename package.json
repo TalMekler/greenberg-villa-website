@@ -10,7 +10,7 @@
     "dev": "concurrently -n web,api -c cyan,magenta \"npm:dev:web\" \"npm:dev:api\"",
     "dev:web": "vite",
     "dev:api": "tsx watch server/index.ts",
-    "build": "tsc -b && vite build && npm run build:api",
+    "build": "node scripts/check-csp.mjs && tsc -b && vite build && npm run build:api",
     "lint": "oxlint",
     "preview": "vite preview",
     "start": "tsx server/index.ts",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
     "express": "^5.2.1",
+    "helmet": "^8.3.0",
     "leaflet": "^1.9.4",
     "multer": "^2.3.0",
     "pg": "^8.23.0",

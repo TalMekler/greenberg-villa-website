@@ -224,9 +224,10 @@ Set these in **Vercel → Settings → Environment Variables**, not just in `.en
 | `SUPABASE_URL` | `https://<ref>.supabase.co` |
 | `SUPABASE_SECRET_KEY` | Server-side only — never expose it to the browser |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Only used to create the very first account |
+| `DATABASE_CA_CERT` | Recommended. Supabase's CA (PEM), so the database certificate is verified |
+| `ALLOWED_ORIGINS` | Optional. Extra origins (e.g. a custom domain) allowed to call the API from a browser |
 
-`NODE_ENV` is already `production` on Vercel, so the session cookie is marked
-`secure`. `API_PORT` is irrelevant there — the function never binds a port,
+On Vercel the session cookie is always marked `secure`. `API_PORT` is irrelevant there — the function never binds a port,
 because `app.listen()` is skipped whenever `VERCEL` is set.
 
 ### Sessions
@@ -249,13 +250,38 @@ live session tokens.
 Supabase's linter will report "RLS enabled, no policy" at INFO level for these
 tables. That is the intended state, not a gap.
 
+The realtime tables the browser *is* allowed to read — `booked_dates`,
+`inquiry_pulse` and their triggers — are defined in `server/sql/realtime.sql`.
+Run it in the SQL editor on a new project. They are granted `SELECT` only.
+
+### Security
+
+See `docs/security-review.md` for the full review. In short:
+
+- **Headers.** The API sets its own via `helmet`. The site's CSP, HSTS and
+  friends are in `vercel.json`. The CSP allows the one inline script in
+  `index.html` by hash, and `npm run build` fails with the new hash if that
+  script changes.
+- **Origins.** Browsers may call the API only from the site itself (plus
+  `ALLOWED_ORIGINS`). Writes from any other origin get a 403. When running the
+  front end locally against a *deployed* API (`API_PROXY`), add
+  `http://localhost:5173` to that deployment's `ALLOWED_ORIGINS`.
+- **Rate limits.** The contact form allows 5 inquiries per hour per visitor and
+  60 per hour overall. Any one address gets at most 2 confirmation emails a day.
+  Login allows 8 failures per 15 minutes. All counters live in Postgres.
+- **Errors.** Clients get a generic message; the details go to the server log.
+  `/api/health` shows diagnostics only outside production or to a signed-in
+  admin.
+
 ## Troubleshooting
 
 | Symptom | Cause |
 | --- | --- |
 | `/admin` says credentials are not configured | No `.env`, or the API has not been restarted since you created it |
 | Sign-in rejected after several tries | Login throttling: 8 failed attempts per 15 minutes, then a pause |
-| Signed out unexpectedly | Sessions live in server memory, so restarting the API signs everyone out |
+| Signed out unexpectedly | The 8-hour session expired, or your password was changed elsewhere |
+| Contact form says "Too many requests" | The per-visitor or overall inquiry limit was hit; it clears within the hour |
+| Admin actions fail with 403 "Cross-origin" | The page's origin is not the API's own and not in `ALLOWED_ORIGINS` |
 | Calendar and photos are empty | The API is not running — only `dev:web` was started |
 | Push to GitHub fails with `HTTP 400` | The repo carries ~22 MB of images; `git config http.postBuffer 524288000` |
 

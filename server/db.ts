@@ -34,10 +34,29 @@ export function pool(): pg.Pool {
     max: 2,
     idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 10_000,
-    // Supabase terminates TLS with its own CA, which Node does not ship.
-    ssl: { rejectUnauthorized: false },
+    ssl: tlsOptions(),
   });
   return cached;
+}
+
+/*
+  Supabase signs its database certificates with its own CA, which Node does not
+  ship. With that CA in DATABASE_CA_CERT (the PEM from Dashboard → Database →
+  SSL Configuration) the certificate is verified like any other. Without it the
+  link is still encrypted but unauthenticated — anyone able to intercept it
+  could pose as the database — so production says so, once, in the log.
+*/
+function tlsOptions(): pg.PoolConfig["ssl"] {
+  // Dashboards often store a pasted PEM with literal "\n" in place of newlines.
+  const ca = process.env.DATABASE_CA_CERT?.replace(/\\n/g, "\n").trim();
+  if (ca) return { ca, rejectUnauthorized: true };
+
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    console.warn(
+      "DATABASE_CA_CERT is not set: the database certificate is not being verified.",
+    );
+  }
+  return { rejectUnauthorized: false };
 }
 
 /** Runs a statement and hands back the rows, typed by the caller. */
@@ -161,6 +180,15 @@ export async function ensureSchema(): Promise<void> {
     )
   `);
 
+  // Fixed-window counters for rate limits other than login (see rate-limit.ts).
+  await query(`
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      key           text PRIMARY KEY,
+      count         integer NOT NULL,
+      "windowStart" bigint NOT NULL
+    )
+  `);
+
   // A single row, id 1, so an UPDATE can never create a second map pin.
   await query(`
     CREATE TABLE IF NOT EXISTS location (
@@ -189,12 +217,34 @@ async function lockDown(): Promise<void> {
     "site_images",
     "sessions",
     "login_attempts",
+    "rate_limits",
     "location",
   ];
   for (const table of tables) {
     await query(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY`);
     await query(`REVOKE ALL ON public.${table} FROM anon, authenticated`);
   }
+
+  /*
+    The realtime projections (server/sql/realtime.sql) are meant to be read by
+    the browser, so they keep SELECT — and nothing else. Supabase's default
+    privileges hand new tables every grant, TRUNCATE included, which RLS does
+    not cover. Their trigger functions run as definer and have no business
+    being callable over /rest/v1/rpc. Both only if the realtime SQL is applied.
+  */
+  await query(`
+    DO $$
+    BEGIN
+      IF to_regclass('public.booked_dates') IS NOT NULL THEN
+        REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+          ON public.booked_dates, public.inquiry_pulse FROM anon, authenticated;
+      END IF;
+      IF to_regprocedure('public.refresh_booked_dates()') IS NOT NULL THEN
+        REVOKE EXECUTE ON FUNCTION public.refresh_booked_dates(), public.bump_inquiry_pulse()
+          FROM PUBLIC, anon, authenticated;
+      END IF;
+    END $$
+  `);
 }
 
 export async function closeDb(): Promise<void> {

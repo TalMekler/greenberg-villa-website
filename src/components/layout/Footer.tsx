@@ -4,7 +4,6 @@ import { navLinks } from "../../data/site";
 import { useLanguage } from "../../i18n";
 import { legalPages, legalPath } from "../../legal";
 import { COOKIE_SETTINGS_ID, openCookieSettings } from "../../lib/cookie-settings";
-import { Icon } from "../ui/Icon";
 
 const linkClass = "font-sans text-[13px] text-cream transition-colors hover:text-white";
 
@@ -50,31 +49,6 @@ export function Footer() {
               ))}
             </ul>
           </nav>
-
-          <ul className="flex items-center gap-4">
-            <li>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label={t.footer.instagram}
-                className="block transition-opacity hover:opacity-70"
-              >
-                <Icon name="instagram" size={20} />
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label={t.footer.facebook}
-                className="block transition-opacity hover:opacity-70"
-              >
-                <Icon name="facebook" size={20} />
-              </a>
-            </li>
-          </ul>
         </div>
 
         <div className="flex flex-col items-center gap-6 border-t border-navy-line pt-8 text-center lg:flex-row lg:items-start lg:justify-between lg:text-start">

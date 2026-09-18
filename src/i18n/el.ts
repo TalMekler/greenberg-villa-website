@@ -223,8 +223,6 @@ export const el: Dictionary = {
   },
   footer: {
     rights: "© 2026 Green Villa. Με επιφύλαξη παντός δικαιώματος.",
-    instagram: "Green Villa στο Instagram",
-    facebook: "Green Villa στο Facebook",
   },
   legal: {
     privacy: "Πολιτική Απορρήτου",

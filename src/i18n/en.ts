@@ -223,8 +223,6 @@ export const en: Dictionary = {
   },
   footer: {
     rights: "© 2026 Green Villa. All rights reserved.",
-    instagram: "Green Villa on Instagram",
-    facebook: "Green Villa on Facebook",
   },
   legal: {
     privacy: "Privacy Policy",

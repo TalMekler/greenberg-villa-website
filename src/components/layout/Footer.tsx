@@ -6,14 +6,14 @@ export function Footer() {
   const { t } = useLanguage();
 
   return (
-    <footer className="bg-navy px-5 pb-12 sm:px-8 lg:px-20">
+    <footer className="on-dark bg-navy px-5 pb-12 sm:px-8 lg:px-20">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 border-t border-navy-line py-12">
         <div className="flex flex-col items-center gap-8 lg:flex-row lg:justify-between">
           <a href="#home" className="font-serif text-[24px] text-white">
             Green Villa
           </a>
 
-          <nav aria-label="Footer">
+          <nav aria-label={t.nav.footerNavLabel}>
             <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
               {navLinks.map((link) => (
                 <li key={link.href}>

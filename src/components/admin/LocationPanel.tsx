@@ -9,7 +9,7 @@ import { VillaMap } from "../ui/VillaMap";
 import { FieldError, adminLabelClass } from "./shared";
 
 const control =
-  "w-full rounded-[4px] border border-line bg-white px-3 py-2 font-sans text-[14px] text-ink focus:border-navy focus:outline-none";
+  "w-full rounded-[4px] border border-field bg-white px-3 py-2 font-sans text-[14px] text-ink focus:border-navy";
 
 const smallButton =
   "rounded-[4px] px-4 py-2.5 font-sans text-[11px] font-bold tracking-[0.04em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40";
@@ -95,6 +95,8 @@ export function LocationPanel({ location, onSaved }: LocationPanelProps) {
             </label>
             <input
               id={`${fieldId}-lat`}
+              aria-invalid={Boolean(errors.latitude)}
+              aria-describedby={errors.latitude ? `${fieldId}-lat-error` : undefined}
               type="number"
               step="0.00001"
               inputMode="decimal"
@@ -103,7 +105,7 @@ export function LocationPanel({ location, onSaved }: LocationPanelProps) {
               className={control}
             />
             <p className="font-sans text-[12px] text-slate">-90 to 90. North is positive.</p>
-            <FieldError message={errors.latitude} />
+            <FieldError id={`${fieldId}-lat-error`} message={errors.latitude} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -112,6 +114,8 @@ export function LocationPanel({ location, onSaved }: LocationPanelProps) {
             </label>
             <input
               id={`${fieldId}-lon`}
+              aria-invalid={Boolean(errors.longitude)}
+              aria-describedby={errors.longitude ? `${fieldId}-lon-error` : undefined}
               type="number"
               step="0.00001"
               inputMode="decimal"
@@ -120,7 +124,7 @@ export function LocationPanel({ location, onSaved }: LocationPanelProps) {
               className={control}
             />
             <p className="font-sans text-[12px] text-slate">-180 to 180. East is positive.</p>
-            <FieldError message={errors.longitude} />
+            <FieldError id={`${fieldId}-lon-error`} message={errors.longitude} />
           </div>
         </div>
 
@@ -130,6 +134,8 @@ export function LocationPanel({ location, onSaved }: LocationPanelProps) {
           </label>
           <input
             id={`${fieldId}-zoom`}
+            aria-invalid={Boolean(errors.zoom)}
+            aria-describedby={errors.zoom ? `${fieldId}-zoom-error` : undefined}
             type="number"
             min={ZOOM_RANGE.min}
             max={ZOOM_RANGE.max}
@@ -141,7 +147,7 @@ export function LocationPanel({ location, onSaved }: LocationPanelProps) {
           <p className="font-sans text-[12px] text-slate">
             {ZOOM_RANGE.min} is regional, {ZOOM_RANGE.max} is street level.
           </p>
-          <FieldError message={errors.zoom} />
+          <FieldError id={`${fieldId}-zoom-error`} message={errors.zoom} />
         </div>
 
         <p className="font-sans text-[13px] text-slate">

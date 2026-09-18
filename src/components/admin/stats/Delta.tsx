@@ -10,7 +10,7 @@ export function Delta({ change, caption }: { change: number | null; caption: str
 
   const rounded = Math.round(change);
   const tone =
-    rounded > 0 ? "text-[#2f7d5d]" : rounded < 0 ? "text-terracotta" : "text-slate";
+    rounded > 0 ? "text-[#2f7d5d]" : rounded < 0 ? "text-terracotta-deep" : "text-slate";
   const arrow = rounded > 0 ? "▲" : rounded < 0 ? "▼" : "—";
 
   return (

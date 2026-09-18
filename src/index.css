@@ -6,6 +6,12 @@
   --color-navy: #1b3a5c;
   --color-navy-line: #2a4e70;
   --color-terracotta: #c97d60;
+  /* The brand terracotta is too light for text: 2.8–3.2:1 on the page's light
+     surfaces. `deep` is the same hue darkened to pass 4.5:1 on white, shell,
+     sand and cream (and to carry white text); `soft` is its light counterpart
+     for text on navy. Keep plain `terracotta` for decoration and large type. */
+  --color-terracotta-deep: #9e5438;
+  --color-terracotta-soft: #f0b49c;
   --color-ink: #222d3a;
   --color-slate: #525c67;
   --color-cream: #f4efe6;
@@ -13,6 +19,9 @@
   --color-shell: #fcfaf7;
   --color-line: #ede8dc;
   --color-line-warm: #e6dec1;
+  /* Outline of a form control on white. `line` (1.2:1) is fine for dividing
+     cards but too faint to find a text box by; this clears 3:1. */
+  --color-field: #8b939b;
   --color-sea: #d4e4ec;
 
   /* English, and the default for anything else. */
@@ -125,9 +134,35 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  :focus-visible {
-    outline: 2px solid var(--color-terracotta);
+  /*
+    One focus ring for everything focusable. Its colour follows the surface it
+    sits on, since no single colour clears 3:1 against both cream and navy:
+    deep terracotta on the light sections, cream inside anything marked
+    `.on-dark` (navbar, hero, contact, footer, lightbox).
+  */
+  :root {
+    --focus-ring: var(--color-terracotta-deep);
+  }
+
+  .on-dark {
+    --focus-ring: var(--color-cream);
+  }
+
+  :focus-visible,
+  /* Tabbing into a date field focuses a day/month/year segment inside it, and
+     Chrome then does not always match :focus or :focus-visible on the field
+     itself — only :focus-within. A text field shows its ring on click anyway,
+     so there is nothing to lose. */
+  input[type="date"]:focus-within {
+    outline: 2px solid var(--focus-ring);
     outline-offset: 3px;
+  }
+
+  /* Targets of in-page focus moves (the skip link's <main>, a confirmation
+     heading) take focus from script only; a ring around a whole section
+     would just be noise. */
+  [tabindex="-1"]:focus {
+    outline: none;
   }
 }
 

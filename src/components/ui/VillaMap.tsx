@@ -5,6 +5,11 @@ import type { VillaLocation } from "../../lib/location";
 interface VillaMapProps {
   location: VillaLocation;
   label: string;
+  /** The map's accessible name, in the page's language. */
+  ariaLabel?: string;
+  /** Names for Leaflet's zoom buttons, which otherwise read in English. */
+  zoomInTitle?: string;
+  zoomOutTitle?: string;
   /** Lets the admin drag the pin to set the coordinates. */
   draggable?: boolean;
   onMove?: (latitude: number, longitude: number) => void;
@@ -30,7 +35,15 @@ function markerIcon(label: string): L.DivIcon {
  * A real OpenStreetMap view centred on the villa, in place of the illustrated
  * map from the Figma frame — a drawn coastline cannot honour real coordinates.
  */
-export function VillaMap({ location, label, draggable = false, onMove }: VillaMapProps) {
+export function VillaMap({
+  location,
+  label,
+  ariaLabel = `Map showing ${label} on Evia island`,
+  zoomInTitle = "Zoom in",
+  zoomOutTitle = "Zoom out",
+  draggable = false,
+  onMove,
+}: VillaMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -49,7 +62,11 @@ export function VillaMap({ location, label, draggable = false, onMove }: VillaMa
       // Page scrolling should not be hijacked; zoom with the buttons.
       scrollWheelZoom: false,
       attributionControl: true,
+      // Added below with translated button names.
+      zoomControl: false,
     });
+
+    L.control.zoom({ zoomInTitle, zoomOutTitle }).addTo(map);
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18,
@@ -59,8 +76,12 @@ export function VillaMap({ location, label, draggable = false, onMove }: VillaMa
     const marker = L.marker([location.latitude, location.longitude], {
       icon: markerIcon(label),
       title: label,
-      alt: `${label} on the map`,
       draggable,
+      // On the public map the pin does nothing when activated, so it should
+      // not be a tab stop announcing itself as a button. The admin's pin is
+      // draggable and keeps Leaflet's keyboard handling.
+      keyboard: draggable,
+      interactive: draggable,
       autoPan: draggable,
     }).addTo(map);
 
@@ -93,11 +114,25 @@ export function VillaMap({ location, label, draggable = false, onMove }: VillaMa
     markerRef.current?.setIcon(markerIcon(label));
   }, [label]);
 
+  // The map is built once, so a language switch renames the zoom buttons in place.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    for (const [selector, name] of [
+      [".leaflet-control-zoom-in", zoomInTitle],
+      [".leaflet-control-zoom-out", zoomOutTitle],
+    ] as const) {
+      const button = container.querySelector(selector);
+      button?.setAttribute("title", name);
+      button?.setAttribute("aria-label", name);
+    }
+  }, [zoomInTitle, zoomOutTitle]);
+
   return (
     <div
       ref={containerRef}
       role="application"
-      aria-label={`Map showing ${label} on Evia island`}
+      aria-label={ariaLabel}
       className="size-full"
     />
   );

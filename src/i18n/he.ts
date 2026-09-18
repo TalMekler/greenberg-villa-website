@@ -12,6 +12,8 @@ export const he: Dictionary = {
     openMenu: "פתיחת תפריט",
     closeMenu: "סגירת תפריט",
     skipToContent: "דילוג לתוכן",
+    mainNavLabel: "ראשי",
+    footerNavLabel: "כותרת תחתונה",
   },
   loader: {
     message: "מכינים עבורכם את הווילה",
@@ -47,6 +49,7 @@ export const he: Dictionary = {
     close: "סגירת הגלריה",
     previous: "התמונה הקודמת",
     next: "התמונה הבאה",
+    dialogLabel: "גלריית תמונות",
   },
   location: {
     eyebrow: "האי אוויה",
@@ -55,6 +58,9 @@ export const he: Dictionary = {
       "אוויה הוא האי השני בגודלו ביוון, ומציע פסגות הרים דרמטיות, יערות עתיקים וחופים נסתרים — והכול במרחק נסיעה מהיבשת.",
     mapLabel: "מפת האי אוויה",
     openInMaps: "פתיחה במפות",
+    mapAria: "מפה אינטראקטיבית המציגה את וילה גרין באי אוויה",
+    zoomIn: "התקרבות",
+    zoomOut: "התרחקות",
     highlights: [
       {
         title: "חוף יאלטרון",
@@ -173,6 +179,7 @@ export const he: Dictionary = {
     message: "הודעה / בקשות מיוחדות",
     send: "שליחת בקשה",
     sending: "שולח…",
+    requiredNote: "שדות המסומנים ב-* הם שדות חובה.",
     placeholders: {
       firstName: "קונסטנטינוס",
       lastName: "פאפאס",
@@ -201,6 +208,7 @@ export const he: Dictionary = {
     hosts: {
       label: "המארחים שלכם",
       names: "אתי וזאביק",
+      photoAlt: "אתי וזאביק, המארחים של וילה גרין, מחייכים יחד",
       quote: '"אנחנו מארחים בווילה המשפחתית האהובה שלנו באי אוויה מאז 2015."',
     },
     channels: { whatsapp: "וואטסאפ", phone: "טלפון", email: "אימייל" },

@@ -79,9 +79,11 @@ export function GalleryEditor({ images, onChanged }: ImagesPanelProps) {
             type="file"
             accept={accept}
             aria-label="Photo to add"
+            aria-invalid={Boolean(errors.image)}
+            aria-describedby={errors.image ? `${fieldId}-image-error` : undefined}
             className="font-sans text-[13px] text-slate file:mr-3 file:rounded-[4px] file:border-0 file:bg-navy file:px-4 file:py-2 file:font-sans file:text-[12px] file:font-bold file:tracking-[0.04em] file:text-white file:uppercase"
           />
-          <FieldError message={errors.image} />
+          <FieldError id={`${fieldId}-image-error`} message={errors.image} />
         </div>
 
         <div className="flex flex-col gap-2">
@@ -92,9 +94,17 @@ export function GalleryEditor({ images, onChanged }: ImagesPanelProps) {
             id={`${fieldId}-alt`}
             value={alt}
             onChange={(event) => setAlt(event.target.value)}
+            aria-invalid={Boolean(errors.alt)}
+            aria-describedby={
+              errors.alt ? `${fieldId}-alt-hint ${fieldId}-alt-error` : `${fieldId}-alt-hint`
+            }
             className={adminFieldClass}
           />
-          <FieldError message={errors.alt} />
+          <p id={`${fieldId}-alt-hint`} className="font-sans text-[12px] text-slate">
+            Read aloud to blind visitors in place of the photo. Say what it shows, in English, in
+            one sentence — e.g. “Infinity pool overlooking the bay at sunset”.
+          </p>
+          <FieldError id={`${fieldId}-alt-error`} message={errors.alt} />
         </div>
 
         {status ? (

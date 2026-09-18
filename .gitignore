@@ -21,3 +21,6 @@ server/data/location.json
 # Recorded walkthroughs of the landing page
 videos
 api/_server.mjs
+
+# Output of npm run a11y
+a11y-report.json

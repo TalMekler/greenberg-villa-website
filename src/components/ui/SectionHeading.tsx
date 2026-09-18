@@ -26,7 +26,7 @@ export function SectionHeading({
     >
       <p
         className={`font-sans text-[14px] font-bold uppercase tracking-[0.08em] ${
-          tone === "light" ? "text-cream" : "text-terracotta"
+          tone === "light" ? "text-cream" : "text-terracotta-deep"
         }`}
       >
         {eyebrow}

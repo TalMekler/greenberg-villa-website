@@ -1,6 +1,6 @@
 /** Field and label classes shared by every admin form. */
 export const adminFieldClass =
-  "w-full rounded-[4px] border border-line bg-white px-4 py-3 font-sans text-[15px] text-ink transition-colors focus:border-navy focus:outline-none";
+  "w-full rounded-[4px] border border-field bg-white px-4 py-3 font-sans text-[15px] text-ink transition-colors focus:border-navy";
 
 export const adminLabelClass =
   "font-sans text-[12px] font-bold tracking-[0.06em] text-slate uppercase";

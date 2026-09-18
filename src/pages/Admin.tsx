@@ -31,9 +31,11 @@ export default function Admin() {
 
   if (checkingSession) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-navy">
-        <p className="font-sans text-[14px] text-cream">Checking your session…</p>
-      </div>
+      <main className="flex min-h-dvh items-center justify-center bg-navy">
+        <p role="status" className="font-sans text-[14px] text-cream">
+          Checking your session…
+        </p>
+      </main>
     );
   }
 

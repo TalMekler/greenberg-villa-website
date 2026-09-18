@@ -12,7 +12,7 @@ import { statsLabelClass as label } from "./styles";
 import { StatCard } from "./StatCard";
 
 const control =
-  "rounded-[4px] border border-line bg-white px-3 py-2 font-sans text-[13px] text-ink focus:border-navy focus:outline-none";
+  "rounded-[4px] border border-field bg-white px-3 py-2 font-sans text-[13px] text-ink focus:border-navy";
 
 function monthLabel(year: number, month: number): string {
   return new Date(year, month, 1).toLocaleDateString("en-GB", {
@@ -224,7 +224,7 @@ export function StatsPanel({ inquiries }: { inquiries: Inquiry[] }) {
                       month: "short",
                     })}
                   </span>
-                  <span className="block text-center opacity-60">
+                  <span className="block text-center">
                     {String(point.year).slice(2)}
                   </span>
                 </span>
@@ -262,7 +262,7 @@ export function StatsPanel({ inquiries }: { inquiries: Inquiry[] }) {
               <span className="flex min-w-[150px] flex-1 items-center gap-2">
                 <span className="h-[10px] min-w-0 flex-1 overflow-hidden rounded-full bg-sand">
                   <span
-                    className="block h-full rounded-full bg-terracotta"
+                    className="block h-full rounded-full bg-terracotta-deep"
                     style={{ width: `${(day.averageGuests / peakGuests) * 100}%` }}
                   />
                 </span>

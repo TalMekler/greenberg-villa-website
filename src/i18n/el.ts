@@ -12,6 +12,8 @@ export const el: Dictionary = {
     openMenu: "Άνοιγμα μενού",
     closeMenu: "Κλείσιμο μενού",
     skipToContent: "Μετάβαση στο περιεχόμενο",
+    mainNavLabel: "Κύρια",
+    footerNavLabel: "Υποσέλιδο",
   },
   loader: {
     message: "Ετοιμάζουμε την απόδρασή σας",
@@ -48,6 +50,7 @@ export const el: Dictionary = {
     close: "Κλείσιμο γκαλερί",
     previous: "Προηγούμενη εικόνα",
     next: "Επόμενη εικόνα",
+    dialogLabel: "Συλλογή φωτογραφιών",
   },
   location: {
     eyebrow: "Το νησί της Εύβοιας",
@@ -56,6 +59,9 @@ export const el: Dictionary = {
       "Η Εύβοια είναι το δεύτερο μεγαλύτερο νησί της Ελλάδας, με επιβλητικές βουνοκορφές, αρχαία δάση και κρυμμένες παραλίες — και παραμένει συνδεδεμένη με την ηπειρωτική χώρα.",
     mapLabel: "Χάρτης Εύβοιας",
     openInMaps: "Άνοιγμα σε χάρτες",
+    mapAria: "Διαδραστικός χάρτης με τη Green Villa στην Εύβοια",
+    zoomIn: "Μεγέθυνση",
+    zoomOut: "Σμίκρυνση",
     highlights: [
       {
         title: "Παραλία Γιάλτρων",
@@ -178,6 +184,7 @@ export const el: Dictionary = {
     message: "Μήνυμα / Ειδικά αιτήματα",
     send: "Αποστολή αιτήματος",
     sending: "Αποστολή…",
+    requiredNote: "Τα πεδία με * είναι υποχρεωτικά.",
     placeholders: {
       firstName: "Κωνσταντίνος",
       lastName: "Παππάς",
@@ -207,6 +214,7 @@ export const el: Dictionary = {
     hosts: {
       label: "Οι οικοδεσπότες σας",
       names: "Έτι & Ζέεβικ",
+      photoAlt: "Η Έτι και ο Ζέεβικ, οι οικοδεσπότες της Green Villa, χαμογελαστοί",
       quote:
         '"Υποδεχόμαστε επισκέπτες στην αγαπημένη μας οικογενειακή βίλα στην Εύβοια από το 2015."',
     },

@@ -23,9 +23,11 @@ export function LanguagePicker({ compact = false }: { compact?: boolean }) {
             dir={languageMeta[option].dir}
             onClick={() => setLanguage(option)}
             aria-pressed={isActive}
+            // The visible "En / עב / Ελ" abbreviations are meaningless read aloud.
+            aria-label={languageMeta[option].name}
             title={languageMeta[option].name}
             className={`rounded-full px-2.5 py-1 font-sans text-[11px] font-bold tracking-[0.06em] transition-colors ${
-              isActive ? "bg-white text-navy" : "text-white/80 hover:bg-white/15 hover:text-white"
+              isActive ? "bg-white text-navy" : "text-white hover:bg-white/15"
             }`}
           >
             {languageMeta[option].short}

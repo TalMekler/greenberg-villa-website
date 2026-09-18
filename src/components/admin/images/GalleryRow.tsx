@@ -62,7 +62,7 @@ export function GalleryRow({
             id={fieldId}
             value={alt}
             onChange={(event) => setAlt(event.target.value)}
-            className="w-full rounded-[4px] border border-line bg-white px-3 py-2 font-sans text-[13px] text-ink focus:border-navy focus:outline-none"
+            className="w-full rounded-[4px] border border-field bg-white px-3 py-2 font-sans text-[13px] text-ink focus:border-navy"
           />
         </div>
 
@@ -97,7 +97,7 @@ export function GalleryRow({
             type="button"
             disabled={busy || total <= 1}
             onClick={() => setConfirming((open) => !open)}
-            className={`${smallButton} border border-terracotta text-terracotta not-disabled:hover:bg-terracotta not-disabled:hover:text-white`}
+            className={`${smallButton} border border-terracotta-deep text-terracotta-deep not-disabled:hover:bg-terracotta-deep not-disabled:hover:text-white`}
           >
             Delete
           </button>
@@ -113,7 +113,7 @@ export function GalleryRow({
             type="button"
             disabled={busy}
             onClick={() => void run(() => deleteGalleryImage(image.id), "image")}
-            className={`${smallButton} bg-terracotta text-white not-disabled:hover:bg-[#b96b4f]`}
+            className={`${smallButton} bg-terracotta-deep text-white not-disabled:hover:bg-[#b96b4f]`}
           >
             {busy ? "Removing…" : "Yes, remove"}
           </button>

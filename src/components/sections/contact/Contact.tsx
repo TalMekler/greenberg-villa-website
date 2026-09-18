@@ -33,6 +33,10 @@ const emptyValues: FormValues = {
 const fieldClass =
   "w-full rounded-[4px] border border-cream/50 bg-[rgba(42,78,112,0.5)] px-4 font-sans text-[14px] text-cream transition-colors placeholder:text-cream/70 hover:border-cream/80 focus:border-cream";
 
+// iOS Safari gives date inputs an intrinsic width that ignores `w-full`,
+// centres the value and collapses the box when it is empty; these undo that.
+const dateFieldClass = `${fieldClass} h-[52px] min-w-0 appearance-none text-start [color-scheme:dark] [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-start`;
+
 const labelClass = "font-sans text-[12px] font-bold tracking-[0.06em] text-cream uppercase";
 
 /** The visible required marker; the field itself carries aria-required. */
@@ -270,7 +274,7 @@ export function Contact({ stay }: ContactProps) {
                   onChange={(event) => setField("checkIn")(event.target.value)}
                   aria-invalid={Boolean(errors.checkIn)}
                   aria-describedby={describedBy("checkIn")}
-                  className={`${fieldClass} h-[52px] [color-scheme:dark]`}
+                  className={dateFieldClass}
                 />
                 <FieldError id={`${formId}-checkIn-error`} message={errors.checkIn} />
               </div>
@@ -290,7 +294,7 @@ export function Contact({ stay }: ContactProps) {
                   onChange={(event) => setField("checkOut")(event.target.value)}
                   aria-invalid={Boolean(errors.checkOut)}
                   aria-describedby={describedBy("checkOut")}
-                  className={`${fieldClass} h-[52px] [color-scheme:dark]`}
+                  className={dateFieldClass}
                 />
                 <FieldError id={`${formId}-checkOut-error`} message={errors.checkOut} />
               </div>

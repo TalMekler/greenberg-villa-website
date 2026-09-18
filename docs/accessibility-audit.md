@@ -184,7 +184,7 @@ The seed text itself in `server/media.ts` (`defaults`, `galleryDefaults`) should
 6. **Admin inquiries table** needs horizontal scrolling below 880px. Data tables are exempt from reflow (WCAG 1.4.10 exception for two-dimensional content), and the scrolling is inside the table's own container, not the page.
 7. **Hosts quote in Hebrew** uses straight ASCII quote marks that bidi places oddly around the year ("…מאז 2015."). Content, not structure; worth replacing with Hebrew gershayim in `he.ts` when the copy is next edited.
 8. **Not tested with a physical screen reader.** Semantics were verified through axe and the accessibility tree via the scripted checks; a manual pass with NVDA (Hebrew voice) and VoiceOver is still recommended before an IS 5568 declaration.
-9. **Accessibility statement.** IS 5568 compliance in Israel also expects a published accessibility statement (הצהרת נגישות) with a contact for accessibility issues. None exists on the site; it is content, not code, and was not added.
+9. **Accessibility statement.** Published at `/:lang/accessibility` in all three languages (`src/legal/{en,he,el}.ts`), listing the standard, what was made accessible and the limitations in this section. The coordinator's name, email and phone are still placeholders in `src/data/accessibility.ts`; the date shown on the page is set there too and should change whenever the statement does.
 10. **Browsers.** Automated checks ran in Chrome only. The date-input focus workaround is Chrome-specific; other browsers already match the base rule.
 
 ## Files changed

@@ -8,6 +8,7 @@
  *  - `{ list }`: a bulleted list;
  *  - `{ terms }`: label/detail pairs, rendered as a description list;
  *  - `{ contact: true }`: the operator's contact details, with live links;
+ *  - `{ coordinator: true }`: the accessibility coordinator's details, likewise;
  *  - `{ see }`: a link to another legal page, named by its own title.
  */
 export type LegalBlock =
@@ -16,6 +17,7 @@ export type LegalBlock =
   | { list: string[] }
   | { terms: [term: string, detail: string][] }
   | { contact: true }
+  | { coordinator: true }
   | { see: LegalPage };
 
 export interface LegalSection {

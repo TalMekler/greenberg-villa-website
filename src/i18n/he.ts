@@ -232,6 +232,7 @@ export const he: Dictionary = {
     address: "כתובת",
     email: "דוא\"ל",
     phone: "טלפון",
+    coordinator: "רכז/ת נגישות",
     ama: "AMA",
     amaFull: "מספר רישום במרשם ההשכרה לטווח קצר של יוון (AMA)",
     formNotice: "אנחנו משתמשים בפרטים האלה רק כדי לענות לבקשת ההזמנה שלכם.",

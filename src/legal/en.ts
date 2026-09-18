@@ -387,22 +387,63 @@ export const en: LegalDocuments = {
   accessibility: {
     title: "Accessibility Statement",
     summary:
-      "We want everyone to be able to use this website. Our full accessibility statement is being prepared and will be published on this page.",
+      "We want everyone to be able to find out about Green Villa and ask to book it, whatever device or assistive technology they use. This statement describes the accessibility standard this website follows, what we have done to meet it, what does not yet work as well as it should, and who to contact if something gets in your way. It covers this website only, not the villa itself.",
     sections: [
       {
-        id: "statement",
-        heading: "Our commitment",
+        id: "standard",
+        heading: "The standard we follow",
         blocks: [
-          "The site is designed to meet the Web Content Accessibility Guidelines (WCAG) 2.0 at level AA, the level adopted by Israeli Standard 5568.",
-          "[[ACCESSIBILITY_STATEMENT]]",
+          "The website has been adapted to meet Israeli Standard 5568, which adopts the Web Content Accessibility Guidelines (WCAG) 2.0 at level AA. For contrast of buttons, form fields and the keyboard focus indicator, and for use at high zoom, we also applied the stricter WCAG 2.1 criteria.",
+          "The site was reviewed in English, Hebrew and Greek with automated testing (axe-core, in Google Chrome) and by hand for the things a tool cannot check, such as the order of keyboard focus and the contrast of text over photos. After the changes described below, the automated tests found no failures. Some limitations remain; they are listed further down this page.",
+        ],
+      },
+      {
+        id: "what-we-did",
+        heading: "What we have made accessible",
+        blocks: [
+          {
+            list: [
+              "Keyboard: everything can be used with the keyboard alone. A \"Skip to content\" link is the first thing you reach, and every link, button and form field shows a clearly visible focus outline.",
+              "Structure: each page has one main heading and an orderly heading structure, labelled navigation areas and a main content area, so screen reader users can move around the page quickly.",
+              "Languages: the site is available in English, Hebrew and Greek. Each page declares its language, and Hebrew is shown right to left, including arrows, the calendar and the photo gallery. Phone numbers, the email address and coordinates are displayed in the correct order in Hebrew.",
+              "Images: photos have text descriptions in all three languages; purely decorative images and icons are hidden from screen readers.",
+              "Colour and contrast: text has a contrast of at least 4.5:1 with its background, and form field borders and the focus outline at least 3:1. Colour is never the only way information is shown — booked dates in the availability calendar are also struck through.",
+              "Zoom: the site can be enlarged to 200% and 400% without having to scroll sideways, and the mobile menu can be scrolled when enlarged.",
+              "Photo gallery: when a photo is opened, focus moves into the viewer and stays there until it is closed with Esc or the \"Close gallery\" button, and then returns to the photo you opened. The arrow keys follow the reading direction, and each new photo is announced.",
+              "Booking request form: every field has a label, required fields are marked, and errors are linked to their fields. If a field is wrong, you hear a summary and focus moves to the first field that needs attention.",
+              "Availability calendar: each date is read out with its status (for example, booked).",
+              "Map: the map can be panned and zoomed with the keyboard, and its buttons are named in the page's language. The same information is also given as text next to it: the coordinates, a link to open the location in a maps app, and nearby places with their distances.",
+              "Motion: if your device is set to reduce motion, animations and smooth scrolling are switched off.",
+            ],
+          },
+        ],
+      },
+      {
+        id: "limitations",
+        heading: "Known limitations",
+        blocks: [
+          "Despite our efforts, some parts of the site are not yet fully accessible. These are the ones we know about:",
+          {
+            list: [
+              "Photo descriptions: some of the villa photos currently have a description that belongs to a different photo (for example, a photo of the living room described as the master bedroom). Corrected descriptions have been written but not yet entered on the site. Until they are, what a screen reader reads for these photos may not match what they show.",
+              "Descriptions added later: if we add a new photo, its description may be available in English only until it is translated. It is marked as English, so a screen reader reads it with an English voice.",
+              "Text over the main photo: the contrast of the title and subtitle over the large photo at the top of the page was checked by calculation, because automated tools cannot measure text over images. On an unusually short, wide window, over a very bright photo, the subtitle may fall slightly below the required contrast.",
+              "The map is visual by nature. Please use the text next to it, which gives the same information. The map provider's attribution line is third-party content and was not tested.",
+              "In Hebrew, the quotation marks in the hosts' quote may appear in the wrong place around the year.",
+              "The site has not yet been tested with a screen reader in use (such as NVDA or VoiceOver). Its structure was checked with automated tools and by inspecting the information it exposes to assistive technology.",
+              "Automated testing was done in Google Chrome only. Other browsers were not tested systematically.",
+              "The hosts' management area (not used by guests) is in English only, and on narrow screens its table of booking requests has to be scrolled sideways.",
+            ],
+          },
         ],
       },
       {
         id: "contact",
-        heading: "Need help?",
+        heading: "Accessibility coordinator",
         blocks: [
-          "If you have difficulty using any part of this site, or need information in another format, contact us and we will help:",
-          { contact: true },
+          "If you have difficulty using any part of this site, find something that is not accessible, or need information in another format, please contact our accessibility coordinator. It helps to tell us which page you were on, what you were trying to do, and which browser and assistive technology (if any) you use.",
+          { coordinator: true },
+          "You are also welcome to contact the coordinator with questions about access to the villa itself.",
         ],
       },
     ],

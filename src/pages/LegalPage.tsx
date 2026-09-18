@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { CookieConsent } from "../components/layout/CookieConsent";
 import { Footer } from "../components/layout/Footer";
 import { LanguagePicker } from "../components/layout/LanguagePicker";
 import { CoordinatorContact, OperatorContact } from "../components/legal/OperatorContact";
@@ -10,6 +11,7 @@ import { dictionaries } from "../i18n/dictionaries";
 import { languageMeta, languages, useLanguage, type Dictionary, type Language } from "../i18n";
 import { formatLongDate } from "../lib/date";
 import { legalDocuments, legalPath, type LegalBlock, type LegalPage as Page } from "../legal";
+import { openCookieSettings } from "../lib/cookie-settings";
 
 /** Below this many sections a table of contents is more clutter than help. */
 const TOC_MIN_SECTIONS = 4;
@@ -65,6 +67,62 @@ function Block({ block, t, language }: { block: LegalBlock; t: Dictionary; langu
     );
   }
   if ("coordinator" in block) return <CoordinatorContact t={t} />;
+  if ("table" in block) {
+    const { caption, head, rows } = block.table;
+    return (
+      // Scrolls sideways on a phone rather than squeezing six columns to nothing.
+      // Focusable and named, so a keyboard user can scroll it too.
+      <div
+        role="region"
+        aria-label={caption}
+        tabIndex={0}
+        className="mt-5 overflow-x-auto rounded-lg border border-line"
+      >
+        <table className="w-full min-w-[640px] border-collapse text-start font-sans text-[14px] leading-[1.55]">
+          <caption className="sr-only">{caption}</caption>
+          <thead className="bg-sand">
+            <tr>
+              {head.map((cell) => (
+                <th key={cell} scope="col" className="border-b border-line px-3 py-2.5 text-start font-semibold text-navy">
+                  {cell}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map((row) => (
+              <tr key={row[0]}>
+                {row.map((cell, index) =>
+                  index === 0 ? (
+                    <th key={index} scope="row" className="px-3 py-2.5 text-start align-top font-semibold whitespace-nowrap text-navy">
+                      <bdi dir="ltr">{cell}</bdi>
+                    </th>
+                  ) : (
+                    <td key={index} className="px-3 py-2.5 align-top text-ink">
+                      <WithPlaceholders text={cell} />
+                    </td>
+                  ),
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+  if ("cookieSettings" in block) {
+    return (
+      <p className="mt-5">
+        <button
+          type="button"
+          onClick={openCookieSettings}
+          className="inline-flex min-h-11 items-center justify-center rounded-[4px] bg-navy px-5 py-2.5 font-sans text-[14px] font-bold text-white transition-colors hover:bg-[#16304d]"
+        >
+          {t.consent.change}
+        </button>
+      </p>
+    );
+  }
   return <OperatorContact t={t} />;
 }
 
@@ -156,6 +214,7 @@ export default function LegalPage({ page }: { page: Page }) {
       >
         {t.nav.skipToContent}
       </a>
+      <CookieConsent />
 
       <header className="on-dark bg-navy">
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-20 lg:py-6">

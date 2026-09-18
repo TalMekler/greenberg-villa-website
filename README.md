@@ -559,6 +559,25 @@ to the default in `src/lib/location.ts` when the file is absent or malformed, so
 the map always renders. Latitude, longitude and zoom are range-checked on the
 server, not only in the form.
 
+## Cookies and consent
+
+A first visit to the public site or a legal page shows a cookie banner with
+**Reject all**, **Accept all** (styled identically) and **Customize**. The choice
+is kept in local storage (`greenberg-villa:cookie-consent`) for 6 months, then
+asked again; the footer's **Cookie settings** reopens the dialog at any time. The
+admin never shows it.
+
+Today the site uses nothing that needs consent — only strictly necessary storage
+(language, the consent record, the hosts' session cookie, and Cloudflare's
+`__cf_bm` on supabase.co). OpenStreetMap tiles and the self-hosted fonts set no
+cookies. The full table is in the privacy policy's `#cookies` section.
+
+**Adding an analytics or marketing tool:** register it in `optionalScripts` in
+`src/lib/consent.ts` (never in `index.html` or a component), so it only loads after
+consent and its cookies are cleared on withdrawal. Add its host to the CSP in
+`vercel.json`, add a row to the cookie table in `src/legal/{en,he,el}.ts`, and bump
+`VERSION` in `consent.ts` so everyone is asked again.
+
 ## Statistics
 
 Computed in the browser from the inquiry list the admin already loads

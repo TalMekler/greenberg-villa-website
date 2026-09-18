@@ -131,7 +131,6 @@ export function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-2 font-sans text-[12px] text-cream/60 sm:flex-row">
           <p>{t.footer.rights}</p>
-          <p>{t.footer.designed}</p>
         </div>
       </div>
     </footer>

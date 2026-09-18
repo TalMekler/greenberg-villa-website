@@ -206,7 +206,7 @@ export const he: Dictionary = {
     channels: { whatsapp: "וואטסאפ", phone: "טלפון", email: "אימייל" },
   },
   footer: {
-    rights: "© 2025 וילה גרין. כל הזכויות שמורות.",
+    rights: "© 2026 וילה גרין. כל הזכויות שמורות.",
     designed: "מעוצב ביוון",
     instagram: "וילה גרין באינסטגרם",
     facebook: "וילה גרין בפייסבוק",

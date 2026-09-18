@@ -57,6 +57,7 @@ import {
   type PriceMode,
 } from "../src/lib/inquiry";
 import { createInquiry, deleteInquiry, listInquiries, setPrice, updateStatus } from "./store";
+import { notificationsConfigured, notifyNewInquiry } from "./notify";
 
 // Reads ADMIN_USERNAME / ADMIN_PASSWORD without committing them to the repo.
 try {
@@ -110,6 +111,7 @@ app.get("/api/health", async (_request, response) => {
     ),
     ADMIN_EMAIL: Boolean(process.env.ADMIN_EMAIL ?? process.env.ADMIN_USERNAME),
     ADMIN_PASSWORD: Boolean(process.env.ADMIN_PASSWORD),
+    RESEND_API_KEY: notificationsConfigured(),
   };
 
   /*
@@ -584,7 +586,11 @@ app.post("/api/inquiries", async (request, response) => {
     return;
   }
 
-  response.status(201).json({ inquiry: await createInquiry(values) });
+  const inquiry = await createInquiry(values);
+  // Awaited, not fire-and-forget: on Vercel the function is frozen as soon as
+  // the response is sent, which would drop an email still in flight.
+  await notifyNewInquiry(inquiry);
+  response.status(201).json({ inquiry });
 });
 
 /**

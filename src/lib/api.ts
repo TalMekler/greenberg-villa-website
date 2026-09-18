@@ -70,7 +70,7 @@ export async function setInquiryStatus(id: string, status: InquiryStatus): Promi
   return inquiry;
 }
 
-/** Erases a cancelled inquiry. The server refuses any other status. */
+/** Erases a cancelled or declined inquiry. The server refuses any other status. */
 export async function deleteInquiry(id: string): Promise<void> {
   await request(`/api/inquiries/${id}`, { method: "DELETE" });
 }

@@ -38,6 +38,7 @@ import {
   updateAlt,
 } from "./media";
 import { ZOOM_RANGE, isValidLocation, type VillaLocation } from "../src/lib/location";
+import { languages, type Language } from "../src/i18n/types";
 import {
   ACCEPTED_IMAGE_TYPES,
   MAX_IMAGE_BYTES,
@@ -600,7 +601,10 @@ app.post("/api/inquiries", async (request, response) => {
   const inquiry = await createInquiry(values);
   // Awaited, not fire-and-forget: on Vercel the function is frozen as soon as
   // the response is sent, which would drop an email still in flight.
-  await notifyNewInquiry(inquiry);
+  // The guest's confirmation goes out in the language they used on the site.
+  const requested = request.body?.language;
+  const language: Language = languages.includes(requested) ? requested : "en";
+  await notifyNewInquiry(inquiry, language);
   response.status(201).json({ inquiry });
 });
 

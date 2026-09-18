@@ -3,6 +3,7 @@ import type { AdminUser } from "./user";
 import type { ExploreSlug, SingleImageKey, SiteImages } from "./site-images";
 import type { VillaLocation } from "./location";
 import type { NotifyResult } from "./notify";
+import type { Language } from "../i18n/types";
 
 /** Thrown for any non-2xx response; `fieldErrors` carries the server's per-field messages. */
 export class ApiError extends Error {
@@ -55,10 +56,11 @@ export async function fetchInquiries(): Promise<Inquiry[]> {
   return inquiries;
 }
 
-export async function createInquiry(input: InquiryInput): Promise<Inquiry> {
+/** `language` picks the language of the guest's confirmation email. */
+export async function createInquiry(input: InquiryInput, language: Language): Promise<Inquiry> {
   const { inquiry } = await request<{ inquiry: Inquiry }>("/api/inquiries", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, language }),
   });
   return inquiry;
 }

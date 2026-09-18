@@ -580,9 +580,10 @@ The directional utilities were replaced with logical ones — `text-start`,
 | Hebrew | Frank Ruhl Libre | Assistant |
 | Greek | GFS Didot | Source Sans 3 |
 
-They load in one Google Fonts request, and each face is served with a
-unicode-range, so a visitor only downloads the files for the script they are
-reading — GFS Didot is never fetched unless Greek is selected. GFS Didot covers
+They are self-hosted from the `@fontsource` packages (`src/fonts.ts`) — no
+request goes to Google, so no visitor's IP address does either. Each face is
+served with a unicode-range, so a visitor only downloads the files for the
+script they are reading — GFS Didot is never fetched unless Greek is selected. GFS Didot covers
 Latin as well as Greek, so the brand name keeps the display face in Greek; the
 Greek stack still falls back to Cormorant Garamond for anything it misses.
 

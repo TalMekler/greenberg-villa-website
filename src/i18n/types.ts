@@ -122,5 +122,27 @@ export interface Dictionary {
     channels: { whatsapp: string; phone: string; email: string };
   };
   footer: { rights: string; designed: string; instagram: string; facebook: string };
+  legal: {
+    privacy: string;
+    terms: string;
+    accessibility: string;
+    cookieSettings: string;
+    /** Names the footer's legal links for screen readers. */
+    navLabel: string;
+    backToSite: string;
+    /** Heading of the in-page table of contents. */
+    contents: string;
+    lastUpdated: string;
+    operatedBy: string;
+    address: string;
+    email: string;
+    phone: string;
+    /** The registry number's short name, as it is printed: "AMA" / "ΑΜΑ". */
+    ama: string;
+    /** What the AMA is, spelled out, for the property page. */
+    amaFull: string;
+    /** Under the contact form: what the details are for. The policy link follows it. */
+    formNotice: string;
+  };
   units: { night: string; nights: string; guest: string; guests: string };
 }

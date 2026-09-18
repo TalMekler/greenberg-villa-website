@@ -30,6 +30,8 @@ For each language (`en`, `he`, `el`) it runs:
 | Reflow | no horizontal scroll at 640px wide (a 1280px window at 200%) and at 320px (400%) |
 | Mobile menu | its last link is reachable at 200% zoom; Esc closes it and returns focus to the button |
 
+For each legal page (`/:lang/privacy`, `/:lang/terms`, `/:lang/accessibility`) in each language, opened with a *different* stored language: axe; `lang`/`dir` taken from the URL; one `h1` and no skipped levels; the document title names the page; skip link to `<main>`; a visible ring on every Tab stop through to the footer's Cookie settings button; no horizontal scroll at 320px. On the privacy page, the language picker must open the same page in the other language with focus kept on the pressed button; on the terms page, Cookie settings must land on the privacy policy's cookies section with focus on its heading.
+
 Plus, once: `prefers-reduced-motion: reduce` (loader bar still, scroll-reveal content shown, no smooth scrolling), and the admin login and dashboard (landmarks, one `h1`, axe).
 
 ## Findings and what was done

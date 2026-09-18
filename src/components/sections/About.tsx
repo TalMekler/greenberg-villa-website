@@ -1,3 +1,4 @@
+import { operator } from "../../data/operator";
 import { statIcons } from "../../data/site";
 import { localizeAlt, useLanguage } from "../../i18n";
 import type { SiteImage } from "../../lib/site-images";
@@ -45,6 +46,10 @@ export function About({ image }: { image: SiteImage }) {
                 </p>
               ))}
             </div>
+            {/* Greek law requires a short-term rental listing to show its registry number. */}
+            <p className="font-sans text-[14px] text-slate">
+              {t.legal.amaFull}: <span dir="ltr">{operator.ama}</span>
+            </p>
             <div className="pt-3">
               <Button href="#gallery" variant="outline">
                 {t.about.cta}

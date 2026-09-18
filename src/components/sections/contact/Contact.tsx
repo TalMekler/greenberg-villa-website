@@ -1,4 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
+import { legalPath } from "../../../legal";
 import { images } from "../../../assets/images";
 import { contactChannels } from "../../../data/site";
 import { useLanguage } from "../../../i18n";
@@ -339,6 +341,17 @@ export function Contact({ stay }: ContactProps) {
                 </p>
               ) : null}
             </div>
+
+            {/* Notice at the point of collection, as the GDPR and Israeli law both ask. */}
+            <p className="font-sans text-[13px] leading-[1.6] text-cream">
+              {t.legal.formNotice}{" "}
+              <Link
+                to={legalPath(language, "privacy")}
+                className="underline underline-offset-2 transition-colors hover:text-white"
+              >
+                {t.legal.privacy}
+              </Link>
+            </p>
           </form>
           )}
 

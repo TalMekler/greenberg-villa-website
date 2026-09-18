@@ -1,5 +1,8 @@
 import { operator as op } from "../data/operator";
+import { retention } from "../lib/retention";
 import type { LegalDocuments } from "./types";
+
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /* Greek legal pages — section for section the same as en.ts, with the same ids. */
 export const el: LegalDocuments = {
@@ -131,9 +134,15 @@ export const el: LegalDocuments = {
         blocks: [
           {
             terms: [
-              ["Αιτήματα κράτησης που δεν έγιναν κράτηση", "[[RETENTION_PERIOD]]"],
-              ["Επιβεβαιωμένες κρατήσεις", "[[BOOKING_RETENTION_PERIOD]]"],
-              ["Διεύθυνση IP και email για την αποτροπή κατάχρησης", "Περίπου 24 ώρες"],
+              [
+                "Αιτήματα κράτησης που δεν έγιναν κράτηση",
+                `${count(retention.unconfirmedMonths, "μήνας", "μήνες")} μετά την ημερομηνία αναχώρησης που ζητήθηκε`,
+              ],
+              [
+                "Επιβεβαιωμένες κρατήσεις",
+                `${count(retention.confirmedYears, "έτος", "έτη")} μετά την αναχώρηση, για τα φορολογικά και λογιστικά αρχεία`,
+              ],
+              ["Διεύθυνση IP και email για την αποτροπή κατάχρησης", `Έως ${retention.counterHours} ώρες`],
               ["Αρχεία καταγραφής του παρόχου φιλοξενίας", "[[HOSTING_LOG_RETENTION]]"],
               ["Η γλώσσα που επιλέξατε", "Στη συσκευή σας, μέχρι να διαγράψετε τα δεδομένα του ιστοτόπου από το πρόγραμμα περιήγησης"],
             ],

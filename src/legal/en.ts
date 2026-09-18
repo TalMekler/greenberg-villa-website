@@ -1,5 +1,8 @@
 import { operator as op } from "../data/operator";
+import { retention } from "../lib/retention";
 import type { LegalDocuments } from "./types";
+
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 /*
   English legal pages. The Hebrew and Greek files mirror this one section for
@@ -135,9 +138,15 @@ export const en: LegalDocuments = {
         blocks: [
           {
             terms: [
-              ["Booking requests that did not become a booking", "[[RETENTION_PERIOD]]"],
-              ["Confirmed bookings", "[[BOOKING_RETENTION_PERIOD]]"],
-              ["IP address and email address used to prevent abuse", "Around 24 hours"],
+              [
+                "Booking requests that did not become a booking",
+                `${count(retention.unconfirmedMonths, "month", "months")} after the requested check-out date`,
+              ],
+              [
+                "Confirmed bookings",
+                `${count(retention.confirmedYears, "year", "years")} after check-out, for tax and accounting records`,
+              ],
+              ["IP address and email address used to prevent abuse", `Up to ${retention.counterHours} hours`],
               ["Hosting server logs", "[[HOSTING_LOG_RETENTION]]"],
               ["Your language choice", "On your device, until you clear your browser’s site data"],
             ],

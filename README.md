@@ -112,6 +112,26 @@ site, and serving them from Supabase's CDN beats proxying the bytes through
 this server. The service-role key is used only for writes and never reaches
 the browser.
 
+### How long data is kept
+
+The privacy policy promises retention periods, and the server enforces them.
+Both read the same numbers, in `src/lib/retention.ts`, so changing a period
+there changes the code and the policy text in all three languages together.
+
+| Data | Deleted |
+| --- | --- |
+| Requests that never became a booking (declined, cancelled, unanswered) | 6 months after the requested check-out |
+| Approved bookings | 7 years after check-out (tax and accounting records) |
+| Anti-abuse counters (visitor IP, guest email) | within 48 hours |
+| Expired admin sessions, old failed-login counters | daily |
+
+The purge (`server/retention.ts`) runs from a daily Vercel Cron at 03:00 UTC
+(`vercel.json` → `GET /api/cron/retention`), which Vercel only authorises when
+**`CRON_SECRET`** is set in the project's environment variables. As a fallback
+it also runs at most once a day when a guest sends a request or a host opens
+the inquiry list, so the periods hold even without the cron. Copies outside the
+database — the hosts' mailboxes, Resend's email logs — are not touched by it.
+
 ### Connecting
 
 Copy four values from the Supabase dashboard into `.env` (git-ignored):
@@ -293,6 +313,14 @@ See `docs/security-review.md` for the full review. In short:
 | --- | --- |
 | `/` | The public marketing site |
 | `/admin` | Booking admin — inquiries, approvals, bookings |
+| `/:lang/privacy` | Privacy policy (`en`, `he`, `el`) |
+| `/:lang/terms` | Terms & booking conditions |
+| `/:lang/accessibility` | Accessibility statement (placeholder) |
+
+The legal pages carry their language in the path; `/privacy` and the others
+without one redirect to the visitor's language. Their text is in `src/legal/`,
+and the operator's details — used there and in the footer — in
+`src/data/operator.ts`. Anything in `[[DOUBLE_BRACKETS]]` is still to be filled in.
 
 Client-side routing via `react-router-dom`. When hosting the production build,
 point the server's SPA fallback at `index.html` so a direct hit on `/admin`

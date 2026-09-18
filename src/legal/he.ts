@@ -1,5 +1,10 @@
 import { operator as op } from "../data/operator";
+import { retention } from "../lib/retention";
 import type { LegalDocuments } from "./types";
+
+/** Hebrew has a dual for months and years: חודש, חודשיים, 3 חודשים. */
+const count = (n: number, one: string, two: string, many: string) =>
+  n === 1 ? one : n === 2 ? two : `${n} ${many}`;
 
 /* Hebrew legal pages — section for section the same as en.ts, with the same ids. */
 export const he: LegalDocuments = {
@@ -131,9 +136,15 @@ export const he: LegalDocuments = {
         blocks: [
           {
             terms: [
-              ["בקשות הזמנה שלא הפכו להזמנה", "[[RETENTION_PERIOD]]"],
-              ["הזמנות שאושרו", "[[BOOKING_RETENTION_PERIOD]]"],
-              ["כתובת IP וכתובת דוא\"ל לצורך מניעת שימוש לרעה", "כ-24 שעות"],
+              [
+                "בקשות הזמנה שלא הפכו להזמנה",
+                `${count(retention.unconfirmedMonths, "חודש", "חודשיים", "חודשים")} לאחר תאריך העזיבה המבוקש`,
+              ],
+              [
+                "הזמנות שאושרו",
+                `${count(retention.confirmedYears, "שנה", "שנתיים", "שנים")} לאחר העזיבה, לצורך רישומי מס והנהלת חשבונות`,
+              ],
+              ["כתובת IP וכתובת דוא\"ל לצורך מניעת שימוש לרעה", `עד ${retention.counterHours} שעות`],
               ["יומני השרת של ספקית האחסון", "[[HOSTING_LOG_RETENTION]]"],
               ["השפה שבחרתם", "במכשיר שלכם, עד שתמחקו את נתוני האתר בדפדפן"],
             ],

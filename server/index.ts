@@ -59,6 +59,7 @@ import {
 import { createInquiry, deleteInquiry, listInquiries, setPrice, updateStatus } from "./store";
 import { clientIp, errorHandler, isProduction, originPolicy, securityHeaders } from "./security";
 import { hit, sweep, type Limit } from "./rate-limit";
+import { isCronRequest, purgeExpired, purgeIfDue } from "./retention";
 import { LIMITS, cleanText, isEmail, sniffImageType, validateInquiry } from "./validation";
 import { notificationsConfigured, notifyNewInquiry, sendTestEmail } from "./notify";
 
@@ -139,6 +140,7 @@ app.get("/api/health", async (request, response) => {
     ADMIN_EMAIL: Boolean(process.env.ADMIN_EMAIL ?? process.env.ADMIN_USERNAME),
     ADMIN_PASSWORD: Boolean(process.env.ADMIN_PASSWORD),
     RESEND_API_KEY: notificationsConfigured(),
+    CRON_SECRET: Boolean(process.env.CRON_SECRET?.trim()),
   };
 
   /*
@@ -615,7 +617,18 @@ app.post("/api/users", requireSettledPassword, async (request, response) => {
 
 /** Admin only: the full inquiry list, including guest contact details. */
 app.get("/api/inquiries", requireSettledPassword, async (_request, response) => {
+  // Expired rows go before the list is read, so a host never sees one.
+  await purgeIfDue();
   response.json({ inquiries: await listInquiries() });
+});
+
+/** Daily, from Vercel Cron (vercel.json): deletes data past its retention period. */
+app.get("/api/cron/retention", async (request, response) => {
+  if (!isCronRequest(request)) {
+    response.status(401).json({ error: "Not authorised." });
+    return;
+  }
+  response.json(await purgeExpired());
 });
 
 app.post("/api/inquiries", async (request, response) => {
@@ -650,6 +663,7 @@ app.post("/api/inquiries", async (request, response) => {
   const confirmGuest = (await hit(confirmationLimit, inquiry.email.toLowerCase())) === null;
   await notifyNewInquiry(inquiry, language, { confirmGuest });
   await sweep(24 * 60 * 60 * 1000);
+  await purgeIfDue();
   response.status(201).json({ inquiry });
 });
 

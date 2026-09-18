@@ -605,7 +605,7 @@ app.post("/api/inquiries", async (request, response) => {
 });
 
 /**
- * Erases a cancelled inquiry. Cancelled only, and enforced here rather than
+ * Erases a cancelled or declined inquiry. Those only, and enforced here rather than
  * only in the UI, so the guard cannot be stepped around by calling the API.
  */
 app.delete("/api/inquiries/:id", requireSettledPassword, async (request, response) => {
@@ -616,8 +616,8 @@ app.delete("/api/inquiries/:id", requireSettledPassword, async (request, respons
     response.status(404).json({ error: "No such inquiry." });
     return;
   }
-  if (target.status !== "cancelled") {
-    response.status(409).json({ error: "Only a cancelled inquiry can be deleted." });
+  if (target.status !== "cancelled" && target.status !== "declined") {
+    response.status(409).json({ error: "Only a cancelled or declined inquiry can be deleted." });
     return;
   }
 

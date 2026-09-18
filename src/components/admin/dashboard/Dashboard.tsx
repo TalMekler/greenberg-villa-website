@@ -90,7 +90,7 @@ export function Dashboard({
     }
   };
 
-  /** Erases a cancelled inquiry. Two steps, because nothing brings it back. */
+  /** Erases a cancelled or declined inquiry. Two steps, because nothing brings it back. */
   const removeInquiry = async (id: string) => {
     setBusyId(id);
     setActionError(null);
@@ -315,7 +315,7 @@ export function Dashboard({
                                 </span>
                               ) : null}
                             </div>
-                          ) : inquiry.status === "cancelled" ? (
+                          ) : inquiry.status === "cancelled" || inquiry.status === "declined" ? (
                             pendingDelete === inquiry.id ? (
                               <div className="flex flex-col items-start gap-2">
                                 <span className="font-sans text-[12px] text-slate">

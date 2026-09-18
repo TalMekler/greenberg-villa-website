@@ -38,6 +38,7 @@ export const en: LegalDocuments = {
           "The name, email address and dates are needed to answer your request. You are under no legal obligation to give them to us, but without them we cannot reply or take a booking. Please do not include sensitive information in your message (such as health details) unless you want us to know it for your stay — for example, an accessibility need.",
           { heading: "What we add" },
           "When we handle your request we record its status (pending, approved, declined or cancelled), when we decided, and the price we agreed with you.",
+          "With your request we also record when you sent it and which version of this policy the form showed you, as evidence of what you were told.",
           { heading: "Collected automatically" },
           {
             list: [

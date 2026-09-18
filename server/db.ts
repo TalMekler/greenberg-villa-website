@@ -128,6 +128,17 @@ export async function ensureSchema(): Promise<void> {
       "priceMode"    text
     )
   `);
+  /*
+    Consent to the Privacy Policy, added after launch — so ADD COLUMN IF NOT
+    EXISTS brings an existing table up to date on the next boot. Nullable:
+    inquiries from before the form asked for it have no record, and inventing
+    one would be worse than having none. ISO text, like every timestamp here.
+  */
+  await query(`
+    ALTER TABLE inquiries
+      ADD COLUMN IF NOT EXISTS "privacyPolicyVersion" text,
+      ADD COLUMN IF NOT EXISTS "privacyAcceptedAt"    text
+  `);
   await query(`CREATE INDEX IF NOT EXISTS inquiries_status ON inquiries (status)`);
   await query(`CREATE INDEX IF NOT EXISTS inquiries_stay ON inquiries ("checkIn", "checkOut")`);
 

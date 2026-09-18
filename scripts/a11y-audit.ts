@@ -369,6 +369,22 @@ async function publicSite(page: Page, language: Language) {
     "Submitting with errors announces a summary and focuses the first invalid field", [JSON.stringify(form)]);
   await runAxe(page, `${scenario}/form-errors`);
 
+  // Privacy consent: read before the button, and announced with it.
+  const consent = await page.evaluate(() => {
+    const button = document.querySelector("#contact form button[type=submit]")!;
+    const notice = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    const link = notice?.querySelector("a");
+    return {
+      before: Boolean(notice && notice.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING),
+      href: link?.getAttribute("href") ?? "",
+      newTab: link?.target === "_blank" && Boolean(link.querySelector(".sr-only")?.textContent?.trim()),
+    };
+  });
+  check(scenario, "form-privacy-consent",
+    consent.before && consent.href === `/${language}/privacy` && consent.newTab,
+    "The privacy notice precedes the submit button, describes it, and links to this language's policy (new tab announced)",
+    [JSON.stringify(consent)]);
+
   // 200% zoom: a 1280px window at 200% lays out at 640 CSS px.
   for (const [width, height, label] of [
     [640, 400, "200%"],

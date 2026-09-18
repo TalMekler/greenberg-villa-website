@@ -83,6 +83,7 @@ export function Contact({ stay }: ContactProps) {
   const { t, language } = useLanguage();
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  const policyLinkRef = useRef<HTMLAnchorElement>(null);
   const [values, setValues] = useState<FormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [confirmation, setConfirmation] = useState<FormValues | null>(null);
@@ -139,10 +140,17 @@ export function Contact({ stay }: ContactProps) {
     } catch (caught) {
       setConfirmation(null);
       // The server validates too; surface its per-field messages when it sends them.
-      if (caught instanceof ApiError && caught.fieldErrors) {
-        setErrors(caught.fieldErrors as FormErrors);
+      const { privacyPolicyVersion: outdatedPolicy, ...fieldErrors } =
+        caught instanceof ApiError ? (caught.fieldErrors ?? {}) : {};
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors as FormErrors);
         setSubmitError(t.contact.errors.fieldsHighlighted);
-        focusFirstInvalid(caught.fieldErrors as FormErrors);
+        focusFirstInvalid(fieldErrors as FormErrors);
+      } else if (outdatedPolicy) {
+        // This page shows an older policy than the one in force: send the guest
+        // to the link, and the alert says a reload brings the new one.
+        setSubmitError(t.legal.consentOutdated);
+        policyLinkRef.current?.focus();
       } else {
         setSubmitError(
           caught instanceof Error ? caught.message : t.contact.errors.generic,
@@ -327,10 +335,32 @@ export function Contact({ stay }: ContactProps) {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            {/*
+              Notice at the point of collection, as the GDPR and Israeli law both
+              ask, and read before the button so sending is an informed agreement.
+              The button points to it too, so a screen reader announces it there.
+              The policy opens in a new tab: leaving would empty the form.
+            */}
+            <p id={`${formId}-consent`} className="font-sans text-[13px] leading-[1.6] text-cream">
+              {t.legal.formNotice} {t.legal.consent.before}
+              <Link
+                ref={policyLinkRef}
+                to={legalPath(language, "privacy")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 transition-colors hover:text-white"
+              >
+                {t.legal.consent.link}
+                <span className="sr-only"> {t.legal.newTab}</span>
+              </Link>
+              {t.legal.consent.after}
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4">
               <button
                 type="submit"
                 disabled={sending}
+                aria-describedby={`${formId}-consent`}
                 className="inline-flex items-center justify-center rounded-[4px] border border-navy bg-white px-8 py-4 font-sans text-[14px] font-bold tracking-[0.02em] text-navy uppercase transition-all duration-200 not-disabled:hover:-translate-y-0.5 not-disabled:hover:bg-cream disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {sending ? t.contact.sending : t.contact.send}
@@ -341,17 +371,6 @@ export function Contact({ stay }: ContactProps) {
                 </p>
               ) : null}
             </div>
-
-            {/* Notice at the point of collection, as the GDPR and Israeli law both ask. */}
-            <p className="font-sans text-[13px] leading-[1.6] text-cream">
-              {t.legal.formNotice}{" "}
-              <Link
-                to={legalPath(language, "privacy")}
-                className="underline underline-offset-2 transition-colors hover:text-white"
-              >
-                {t.legal.privacy}
-              </Link>
-            </p>
           </form>
           )}
 

@@ -619,7 +619,7 @@ app.get("/api/inquiries", requireSettledPassword, async (_request, response) => 
 });
 
 app.post("/api/inquiries", async (request, response) => {
-  const { errors, values } = validateInquiry(request.body ?? {});
+  const { errors, values, privacyPolicyVersion } = validateInquiry(request.body ?? {});
   if (Object.keys(errors).length > 0) {
     response.status(400).json({ errors });
     return;
@@ -639,7 +639,7 @@ app.post("/api/inquiries", async (request, response) => {
     return;
   }
 
-  const inquiry = await createInquiry(values);
+  const inquiry = await createInquiry(values, privacyPolicyVersion);
   // Awaited, not fire-and-forget: on Vercel the function is frozen as soon as
   // the response is sent, which would drop an email still in flight.
   // The guest's confirmation goes out in the language they used on the site —

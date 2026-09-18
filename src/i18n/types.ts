@@ -141,8 +141,17 @@ export interface Dictionary {
     ama: string;
     /** What the AMA is, spelled out, for the property page. */
     amaFull: string;
-    /** Under the contact form: what the details are for. The policy link follows it. */
+    /** Above the contact form's button: what the details are for. The consent sentence follows it. */
     formNotice: string;
+    /**
+     * "By submitting you agree to the Privacy Policy." in three parts, so the
+     * link can sit wherever the language's grammar puts it.
+     */
+    consent: { before: string; link: string; after: string };
+    /** Screen-reader note on a link that opens a new tab, so the form stays filled in. */
+    newTab: string;
+    /** The form showed an older policy than the server's; a reload shows the new one. */
+    consentOutdated: string;
   };
   units: { night: string; nights: string; guest: string; guests: string };
 }

@@ -41,6 +41,18 @@ export interface Inquiry extends InquiryInput {
   decidedAt?: string;
   /** Set by the admin once a booking is confirmed. Never sent to the public site. */
   price?: BookingPrice;
+  /**
+   * The guest's agreement to the Privacy Policy: which version, and when.
+   * Missing on inquiries sent before the form recorded it.
+   */
+  privacy?: PrivacyConsent;
+}
+
+export interface PrivacyConsent {
+  /** A `PRIVACY_POLICY_VERSION` from src/lib/privacy.ts. */
+  version: string;
+  /** ISO-8601, set by the server when the request was stored. */
+  acceptedAt: string;
 }
 
 /** Nightly rate and stay total, whichever way the amount was entered. */

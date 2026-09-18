@@ -121,7 +121,7 @@ export interface Dictionary {
     hosts: { label: string; names: string; photoAlt: string; quote: string };
     channels: { whatsapp: string; phone: string; email: string };
   };
-  footer: { rights: string; designed: string };
+  footer: { rights: string };
   legal: {
     privacy: string;
     terms: string;

@@ -216,7 +216,6 @@ export const he: Dictionary = {
   },
   footer: {
     rights: "© 2026 וילה גרין. כל הזכויות שמורות.",
-    designed: "מעוצב ביוון",
   },
   legal: {
     privacy: "מדיניות פרטיות",

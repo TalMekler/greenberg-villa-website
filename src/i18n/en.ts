@@ -223,7 +223,6 @@ export const en: Dictionary = {
   },
   footer: {
     rights: "© 2026 Green Villa. All rights reserved.",
-    designed: "Designed in Greece",
   },
   legal: {
     privacy: "Privacy Policy",

@@ -189,6 +189,7 @@ export const el: Dictionary = {
       firstName: "Κωνσταντίνος",
       lastName: "Παππάς",
       email: "constantinos@gmail.com",
+      date: "Επιλέξτε ημερομηνία",
       message:
         "Γεια σας, θα θέλαμε πολύ να κανονίσουμε έναν ιδιωτικό σεφ για το βράδυ της 15ης Ιουλίου. Πείτε μας αν είναι εφικτό.",
     },

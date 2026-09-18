@@ -189,6 +189,7 @@ export const en: Dictionary = {
       firstName: "Constantinos",
       lastName: "Pappas",
       email: "constantinos@gmail.com",
+      date: "Select a date",
       message:
         "Hello, we would love to arrange a private chef for the evening of July 15th. Let us know if this is possible.",
     },

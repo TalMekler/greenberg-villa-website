@@ -10,6 +10,7 @@ import { ApiError, createInquiry } from "../../../lib/api";
 import { Icon } from "../../ui/Icon";
 import { SectionHeading } from "../../ui/SectionHeading";
 import type { Stay } from "../../../lib/stay";
+import { DateInput } from "./DateInput";
 import { FieldError } from "./FieldError";
 import { RequestSent } from "./RequestSent";
 import type { FormErrors, FormValues } from "./types";
@@ -32,10 +33,6 @@ const emptyValues: FormValues = {
 // 4.5:1 on navy); focus adds the page's cream ring on top of the border change.
 const fieldClass =
   "w-full rounded-[4px] border border-cream/50 bg-[rgba(42,78,112,0.5)] px-4 font-sans text-[14px] text-cream transition-colors placeholder:text-cream/70 hover:border-cream/80 focus:border-cream";
-
-// iOS Safari gives date inputs an intrinsic width that ignores `w-full`,
-// centres the value and collapses the box when it is empty; these undo that.
-const dateFieldClass = `${fieldClass} h-[52px] min-w-0 appearance-none text-start [color-scheme:dark] [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-start`;
 
 const labelClass = "font-sans text-[12px] font-bold tracking-[0.06em] text-cream uppercase";
 
@@ -114,6 +111,9 @@ export function Contact({ stay }: ContactProps) {
       setConfirmation(null);
     }
   }
+
+  // Neither date can be in the past.
+  const today = toDateKey(new Date());
 
   const setField = (field: keyof FormValues) => (value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -265,16 +265,16 @@ export function Contact({ stay }: ContactProps) {
                   {t.contact.checkIn}
                   <Required />
                 </label>
-                <input
+                <DateInput
                   id={`${formId}-checkIn`}
                   name="checkIn"
-                  aria-required="true"
-                  type="date"
+                  min={today}
                   value={values.checkIn}
-                  onChange={(event) => setField("checkIn")(event.target.value)}
-                  aria-invalid={Boolean(errors.checkIn)}
-                  aria-describedby={describedBy("checkIn")}
-                  className={dateFieldClass}
+                  placeholder={t.contact.placeholders.date}
+                  onChange={setField("checkIn")}
+                  invalid={Boolean(errors.checkIn)}
+                  describedBy={describedBy("checkIn")}
+                  className={fieldClass}
                 />
                 <FieldError id={`${formId}-checkIn-error`} message={errors.checkIn} />
               </div>
@@ -284,17 +284,16 @@ export function Contact({ stay }: ContactProps) {
                   {t.contact.checkOut}
                   <Required />
                 </label>
-                <input
+                <DateInput
                   id={`${formId}-checkOut`}
                   name="checkOut"
-                  aria-required="true"
-                  type="date"
-                  min={values.checkIn || undefined}
+                  min={values.checkIn || today}
                   value={values.checkOut}
-                  onChange={(event) => setField("checkOut")(event.target.value)}
-                  aria-invalid={Boolean(errors.checkOut)}
-                  aria-describedby={describedBy("checkOut")}
-                  className={dateFieldClass}
+                  placeholder={t.contact.placeholders.date}
+                  onChange={setField("checkOut")}
+                  invalid={Boolean(errors.checkOut)}
+                  describedBy={describedBy("checkOut")}
+                  className={fieldClass}
                 />
                 <FieldError id={`${formId}-checkOut-error`} message={errors.checkOut} />
               </div>

@@ -53,11 +53,13 @@ import {
   priceModes,
   type BookingPrice,
   type Currency,
-  type InquiryInput,
   type InquiryStatus,
   type PriceMode,
 } from "../src/lib/inquiry";
 import { createInquiry, deleteInquiry, listInquiries, setPrice, updateStatus } from "./store";
+import { clientIp, errorHandler, isProduction, originPolicy, securityHeaders } from "./security";
+import { hit, sweep, type Limit } from "./rate-limit";
+import { LIMITS, cleanText, isEmail, sniffImageType, validateInquiry } from "./validation";
 import { notificationsConfigured, notifyNewInquiry, sendTestEmail } from "./notify";
 
 // Reads ADMIN_USERNAME / ADMIN_PASSWORD without committing them to the repo.
@@ -71,6 +73,9 @@ const app = express();
 // Deliberately not `PORT`: dev harnesses often set that for the web server.
 const port = Number(process.env.API_PORT ?? 3001);
 
+app.disable("x-powered-by");
+app.use(securityHeaders);
+app.use(originPolicy);
 app.use(express.json({ limit: "32kb" }));
 
 /*
@@ -98,14 +103,35 @@ function ready(): Promise<void> {
 }
 
 /**
- * Reports what the server can see, without disclosing any of it: which
- * variables are set, and the driver's error *code* if a connection fails.
- * Enough to tell a missing variable from a rejected password from a DNS
- * failure, with nothing in it worth leaking.
+ * Reports whether the server is up. The public gets only that. The diagnostics
+ * — which variables are set, where the database is, the driver's error code —
+ * are for a developer: shown outside production, or to a signed-in admin. None
+ * of it is secret, but together it is a map of the backend.
  */
-app.get("/api/health", async (_request, response) => {
+app.get("/api/health", async (request, response) => {
+  let startupState = "ok";
+  let code: string | undefined;
+  try {
+    await ready();
+  } catch (error) {
+    startupState = "failed";
+    const problem = error as { code?: string; name?: string };
+    code = problem.code ?? problem.name ?? "unknown";
+  }
+  const status = startupState === "ok" ? 200 : 503;
+
+  // Only ask who is asking when the database can answer.
+  const detailed =
+    !isProduction() ||
+    (startupState === "ok" && (await sessionUserId(request).catch(() => null)) !== null);
+  if (!detailed) {
+    response.status(status).json({ startup: startupState });
+    return;
+  }
+
   const env = {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
+    DATABASE_CA_CERT: Boolean(process.env.DATABASE_CA_CERT),
     SUPABASE_URL: Boolean(process.env.SUPABASE_URL),
     SUPABASE_SECRET_KEY: Boolean(
       process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -137,19 +163,7 @@ app.get("/api/health", async (_request, response) => {
     }
   }
 
-  let startupState = "ok";
-  let code: string | undefined;
-  try {
-    await ready();
-  } catch (error) {
-    startupState = "failed";
-    const problem = error as { code?: string; name?: string };
-    code = problem.code ?? problem.name ?? "unknown";
-  }
-
-  response
-    .status(startupState === "ok" ? 200 : 503)
-    .json({ env, database: target, startup: startupState, code });
+  response.status(status).json({ env, database: target, startup: startupState, code });
 });
 
 /** Everything else waits for that setup, and reports plainly if it failed. */
@@ -183,7 +197,13 @@ const upload = multer({
  * anything still pointing at /api/media is sent on to the same object.
  */
 app.get("/api/media/:file", (request, response) => {
-  response.redirect(308, publicUrl(String(request.params.file)));
+  const file = String(request.params.file);
+  // Legacy uploads were always `<uuid>.<ext>`; nothing else is a real object.
+  if (!/^[\w-]+\.(jpe?g|png|webp)$/i.test(file)) {
+    response.status(404).json({ error: "No such file." });
+    return;
+  }
+  response.redirect(308, publicUrl(file));
 });
 
 const statuses: InquiryStatus[] = ["pending", "approved", "declined", "cancelled"];
@@ -193,42 +213,39 @@ function passwordProblem(password: string): string | null {
   if (password.length < MIN_PASSWORD_LENGTH) {
     return `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
   }
+  if (password.length > LIMITS.password) {
+    return `Use at most ${LIMITS.password} characters.`;
+  }
   if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
     return "Use at least one letter and one number.";
   }
   return null;
 }
-const dateKey = /^\d{4}-\d{2}-\d{2}$/;
 
-function validate(body: Record<string, unknown>): {
-  errors: Record<string, string>;
-  values: InquiryInput;
-} {
-  const text = (key: string) => (typeof body[key] === "string" ? (body[key] as string).trim() : "");
-
-  const values: InquiryInput = {
-    firstName: text("firstName"),
-    lastName: text("lastName"),
-    email: text("email"),
-    checkIn: text("checkIn"),
-    checkOut: text("checkOut"),
-    guests: text("guests") || "1",
-    message: text("message"),
-  };
-
-  const errors: Record<string, string> = {};
-  if (!values.firstName) errors.firstName = "First name is required.";
-  if (!values.lastName) errors.lastName = "Last name is required.";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(values.email)) errors.email = "Invalid email address.";
-  if (!dateKey.test(values.checkIn)) errors.checkIn = "Check-in date is required.";
-  if (!dateKey.test(values.checkOut)) {
-    errors.checkOut = "Check-out date is required.";
-  } else if (values.checkOut <= values.checkIn) {
-    errors.checkOut = "Check-out must be after check-in.";
+/** A photo description from the request, or a 400 already sent when it is too long. */
+function readAlt(request: express.Request, response: express.Response): string | null {
+  const alt = cleanText(request.body?.alt);
+  if (alt.length > LIMITS.alt) {
+    response
+      .status(400)
+      .json({ errors: { alt: `Keep the description under ${LIMITS.alt} characters.` } });
+    return null;
   }
-
-  return { errors, values };
+  return alt;
 }
+
+/*
+  The public contact form. Every inquiry saves a row and sends two emails —
+  one of them to whatever address the visitor typed — so it is limited per
+  visitor, and overall so a crowd of addresses cannot flood it either.
+*/
+const inquiryLimits = {
+  perVisitor: { name: "inquiry-ip", max: 5, windowMs: 60 * 60 * 1000 },
+  overall: { name: "inquiry-all", max: 60, windowMs: 60 * 60 * 1000 },
+} satisfies Record<string, Limit>;
+
+/** One recipient gets at most this many confirmations a day, whoever asks. */
+const confirmationLimit: Limit = { name: "confirm-to", max: 2, windowMs: 24 * 60 * 60 * 1000 };
 
 /** Public: only the taken dates, never any guest details. */
 /** Public: where the map is centred. */
@@ -271,8 +288,14 @@ app.get("/api/site-images", async (_request, response) => {
   response.json(await listSiteImages());
 });
 
+/**
+ * The upload, if its bytes really are the image type it claims. multer only saw
+ * the Content-Type the browser declared, which is the client's say-so.
+ */
 function uploadedFile(request: express.Request): Express.Multer.File | null {
-  return request.file ?? null;
+  const file = request.file;
+  if (!file) return null;
+  return sniffImageType(file.buffer) === file.mimetype ? file : null;
 }
 
 /** Replaces one of the single-slot photos: `hero` or `lifestyle`. */
@@ -293,7 +316,8 @@ app.post(
       return;
     }
 
-    const alt = typeof request.body?.alt === "string" ? request.body.alt.trim() : "";
+    const alt = readAlt(request, response);
+    if (alt === null) return;
     response.json(await replaceSingle(key, file.buffer, file.originalname, file.mimetype, alt));
   },
 );
@@ -316,7 +340,8 @@ app.post(
       return;
     }
 
-    const alt = typeof request.body?.alt === "string" ? request.body.alt.trim() : "";
+    const alt = readAlt(request, response);
+    if (alt === null) return;
     response.json(await replaceExplore(slug, file.buffer, file.originalname, file.mimetype, alt));
   },
 );
@@ -332,7 +357,8 @@ app.post(
       return;
     }
 
-    const alt = typeof request.body?.alt === "string" ? request.body.alt.trim() : "";
+    const alt = readAlt(request, response);
+    if (alt === null) return;
     if (!alt) {
       response
         .status(400)
@@ -361,7 +387,8 @@ app.delete("/api/site-images/gallery/:id", requireSettledPassword, async (reques
 });
 
 app.patch("/api/site-images/:id/alt", requireSettledPassword, async (request, response) => {
-  const alt = typeof request.body?.alt === "string" ? request.body.alt.trim() : "";
+  const alt = readAlt(request, response);
+  if (alt === null) return;
   if (!alt) {
     response.status(400).json({ errors: { alt: "Description cannot be empty." } });
     return;
@@ -378,7 +405,7 @@ app.patch("/api/site-images/:id/alt", requireSettledPassword, async (request, re
 
 app.post("/api/site-images/gallery/order", requireSettledPassword, async (request, response) => {
   const ids = Array.isArray(request.body?.ids) ? (request.body.ids as unknown[]) : null;
-  if (!ids || !ids.every((id) => typeof id === "string")) {
+  if (!ids || ids.length > LIMITS.galleryIds || !ids.every((id) => typeof id === "string")) {
     response.status(400).json({ error: "Send the full list of image ids, in the new order." });
     return;
   }
@@ -567,7 +594,7 @@ app.post("/api/users", requireSettledPassword, async (request, response) => {
   const password = typeof request.body?.password === "string" ? request.body.password : "";
 
   const errors: Record<string, string> = {};
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+  if (!isEmail(email.trim())) {
     errors.email = "Enter a valid email address.";
   } else if (await findByEmail(email)) {
     errors.email = "An account with that email already exists.";
@@ -592,19 +619,37 @@ app.get("/api/inquiries", requireSettledPassword, async (_request, response) => 
 });
 
 app.post("/api/inquiries", async (request, response) => {
-  const { errors, values } = validate(request.body ?? {});
+  const { errors, values } = validateInquiry(request.body ?? {});
   if (Object.keys(errors).length > 0) {
     response.status(400).json({ errors });
+    return;
+  }
+
+  // Counted only once the form is valid, so a guest fixing a typo is not
+  // spending their allowance. Per visitor first: one visitor over their limit
+  // should not also use up everyone else's.
+  const wait =
+    (await hit(inquiryLimits.perVisitor, clientIp(request))) ??
+    (await hit(inquiryLimits.overall, "all"));
+  if (wait !== null) {
+    response
+      .status(429)
+      .setHeader("Retry-After", String(wait))
+      .json({ error: "Too many requests. Please try again later." });
     return;
   }
 
   const inquiry = await createInquiry(values);
   // Awaited, not fire-and-forget: on Vercel the function is frozen as soon as
   // the response is sent, which would drop an email still in flight.
-  // The guest's confirmation goes out in the language they used on the site.
+  // The guest's confirmation goes out in the language they used on the site —
+  // unless that address has had its share today, so the form cannot be used
+  // to mail somebody over and over.
   const requested = request.body?.language;
   const language: Language = languages.includes(requested) ? requested : "en";
-  await notifyNewInquiry(inquiry, language);
+  const confirmGuest = (await hit(confirmationLimit, inquiry.email.toLowerCase())) === null;
+  await notifyNewInquiry(inquiry, language, { confirmGuest });
+  await sweep(24 * 60 * 60 * 1000);
   response.status(201).json({ inquiry });
 });
 
@@ -654,27 +699,6 @@ app.patch("/api/inquiries/:id", requireSettledPassword, async (request, response
   response.json({ inquiry: await updateStatus(id, status) });
 });
 
-// multer surfaces its own errors (size limit, etc.) — translate them.
-app.use(
-  (
-    error: unknown,
-    _request: express.Request,
-    response: express.Response,
-    next: express.NextFunction,
-  ) => {
-    if (error instanceof multer.MulterError) {
-      const message =
-        error.code === "LIMIT_FILE_SIZE"
-          ? `That image is over ${Math.round(MAX_IMAGE_BYTES / (1024 * 1024))}MB.`
-          : "That upload was rejected.";
-      response.status(400).json({ errors: { image: message } });
-      return;
-    }
-    next(error);
-  },
-);
-
-
 /** Sets or clears the agreed price on a confirmed booking. */
 app.patch("/api/inquiries/:id/price", requireSettledPassword, async (request, response) => {
   const id = String(request.params.id);
@@ -719,6 +743,34 @@ app.patch("/api/inquiries/:id/price", requireSettledPassword, async (request, re
   response.json({ inquiry: await setPrice(id, price) });
 });
 
+/** Unknown API paths get JSON, not Express's HTML page. */
+app.use("/api", (_request, response) => {
+  response.status(404).json({ error: "Not found." });
+});
+
+// multer surfaces its own errors (size limit, etc.) — translate them.
+app.use(
+  (
+    error: unknown,
+    _request: express.Request,
+    response: express.Response,
+    next: express.NextFunction,
+  ) => {
+    if (error instanceof multer.MulterError) {
+      const message =
+        error.code === "LIMIT_FILE_SIZE"
+          ? `That image is over ${Math.round(MAX_IMAGE_BYTES / (1024 * 1024))}MB.`
+          : "That upload was rejected.";
+      response.status(400).json({ errors: { image: message } });
+      return;
+    }
+    next(error);
+  },
+);
+
+// Last: anything else is logged here and reported without detail.
+app.use(errorHandler);
+
 /*
   On Vercel this module is imported by `api/index.ts` and the app is used as the
   request handler — there is no socket to listen on, and calling listen() would
@@ -727,7 +779,10 @@ app.patch("/api/inquiries/:id/price", requireSettledPassword, async (request, re
 if (!process.env.VERCEL) {
   app.listen(port, async () => {
     console.log(`API listening on http://localhost:${port}`);
-    if (!(await credentialsConfigured())) {
+    // A database that is down must not take the process with it; /api/health
+    // reports it instead.
+    const configured = await credentialsConfigured().catch(() => true);
+    if (!configured) {
       console.warn(
         "No admin accounts exist and ADMIN_EMAIL / ADMIN_PASSWORD are not set — /admin will refuse every sign-in.",
       );

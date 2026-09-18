@@ -1,6 +1,7 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { query, queryOne } from "./db";
+import { clientIp, isProduction } from "./security";
 import { countUsers, getById } from "./users";
 
 const COOKIE_NAME = "villa_admin_session";
@@ -32,9 +33,23 @@ function parseCookies(header: string | undefined): Record<string, string> {
   );
 }
 
+/*
+  The table holds a SHA-256 of each token, never the token itself, so a leaked
+  copy of `sessions` cannot be replayed as a cookie. A plain hash is enough: the
+  token is 256 random bits, so there is nothing to guess and no need for salt.
+*/
+function digest(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function sessionToken(request: Request): string | undefined {
+  const token = parseCookies(request.headers.cookie)[COOKIE_NAME];
+  return token ? digest(token) : undefined;
+}
+
 /** The signed-in user's id, or null. Expired rows are dropped as they are met. */
 export async function sessionUserId(request: Request): Promise<string | null> {
-  const token = parseCookies(request.headers.cookie)[COOKIE_NAME];
+  const token = sessionToken(request);
   if (!token) return null;
 
   const row = await queryOne<{ userId: string }>(
@@ -51,7 +66,7 @@ export async function sessionUserId(request: Request): Promise<string | null> {
 }
 
 export async function throttled(request: Request): Promise<boolean> {
-  const key = request.ip ?? "unknown";
+  const key = clientIp(request);
   const record = await queryOne<{ count: number; firstAt: string }>(
     `SELECT count, "firstAt" FROM login_attempts WHERE key = $1`,
     [key],
@@ -67,7 +82,7 @@ export async function throttled(request: Request): Promise<boolean> {
 }
 
 export async function recordFailure(request: Request): Promise<void> {
-  const key = request.ip ?? "unknown";
+  const key = clientIp(request);
   const now = Date.now();
 
   // One statement, so two failures arriving together cannot both read a count
@@ -88,11 +103,11 @@ export async function startSession(
   response: Response,
   userId: string,
 ): Promise<void> {
-  await query(`DELETE FROM login_attempts WHERE key = $1`, [request.ip ?? "unknown"]);
+  await query(`DELETE FROM login_attempts WHERE key = $1`, [clientIp(request)]);
 
   const token = randomBytes(32).toString("hex");
   await query(`INSERT INTO sessions (token, "userId", "expiresAt") VALUES ($1, $2, $3)`, [
-    token,
+    digest(token),
     userId,
     Date.now() + SESSION_TTL_MS,
   ]);
@@ -102,21 +117,21 @@ export async function startSession(
   response.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction(),
     path: "/",
     maxAge: SESSION_TTL_MS,
   });
 }
 
 export async function endSession(request: Request, response: Response): Promise<void> {
-  const token = parseCookies(request.headers.cookie)[COOKIE_NAME];
+  const token = sessionToken(request);
   if (token) await query(`DELETE FROM sessions WHERE token = $1`, [token]);
   response.clearCookie(COOKIE_NAME, { path: "/" });
 }
 
 /** Drops every session belonging to a user — used after a password change. */
 export async function endSessionsForUser(userId: string, except?: Request): Promise<void> {
-  const keep = except ? parseCookies(except.headers.cookie)[COOKIE_NAME] : undefined;
+  const keep = except ? sessionToken(except) : undefined;
   await query(`DELETE FROM sessions WHERE "userId" = $1 AND token IS DISTINCT FROM $2`, [
     userId,
     keep ?? null,

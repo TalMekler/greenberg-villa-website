@@ -259,8 +259,16 @@ ${htmlTable(rows)}
 
 // ── Entry points ─────────────────────────────────────────────────────────────
 
-/** Tells the hosts and confirms to the guest, side by side. Never throws. */
-export async function notifyNewInquiry(inquiry: Inquiry, language: Language): Promise<void> {
+/**
+ * Tells the hosts and confirms to the guest, side by side. Never throws.
+ * `confirmGuest: false` skips the guest's copy — the caller's rate limit says
+ * that address has been mailed enough.
+ */
+export async function notifyNewInquiry(
+  inquiry: Inquiry,
+  language: Language,
+  { confirmGuest = true }: { confirmGuest?: boolean } = {},
+): Promise<void> {
   if (!notificationsConfigured()) return;
   let hostAddresses: string[] = [];
   try {
@@ -271,10 +279,12 @@ export async function notifyNewInquiry(inquiry: Inquiry, language: Language): Pr
 
   const [toHosts, toGuest] = await Promise.all([
     send(hostEmail(inquiry, hostAddresses)),
-    send(guestEmail(inquiry, language)),
+    confirmGuest ? send(guestEmail(inquiry, language)) : null,
   ]);
   if (!toHosts.sent) console.error(`Inquiry email to hosts failed: ${toHosts.error}`);
-  if (!toGuest.sent) console.error(`Confirmation email to guest failed: ${toGuest.error}`);
+  if (toGuest && !toGuest.sent) {
+    console.error(`Confirmation email to guest failed: ${toGuest.error}`);
+  }
 }
 
 /** Sends a made-up inquiry to the hosts and reports exactly what the mail provider said. */

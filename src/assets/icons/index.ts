@@ -8,8 +8,6 @@ import chevronLeft from "./chevron-left.svg";
 import chevronRight from "./chevron-right.svg";
 import droplet from "./droplet.svg";
 import eye from "./eye.svg";
-import facebook from "./facebook.svg";
-import instagram from "./instagram.svg";
 import mail from "./mail.svg";
 import mapPin from "./map-pin.svg";
 import messageSquare from "./message-square.svg";
@@ -27,8 +25,6 @@ export const icons = {
   chevronRight,
   droplet,
   eye,
-  facebook,
-  instagram,
   mail,
   mapPin,
   messageSquare,

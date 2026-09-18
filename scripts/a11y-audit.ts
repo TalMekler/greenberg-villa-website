@@ -314,7 +314,7 @@ async function publicSite(page: Page, language: Language) {
     if (!stop.ring) noRing.push(`${stop.key} (${stop.why})`);
   }
   check(scenario, "focus-visible", noRing.length === 0, "Every Tab stop shows a focus outline", noRing);
-  check(scenario, "tab-order-reaches-footer", order.some((key) => key.includes("Facebook") || key.includes("פייסבוק") || key.includes("Facebook")),
+  check(scenario, "tab-order-reaches-footer", order.some((key) => ["Cookie settings", "הגדרות עוגיות", "Ρυθμίσεις cookies"].some((label) => key.includes(label))),
     "Tabbing reaches the footer without getting stuck", [order.length + " stops"]);
 
   // Gallery lightbox: focus in, trapped, Escape closes, focus returns.

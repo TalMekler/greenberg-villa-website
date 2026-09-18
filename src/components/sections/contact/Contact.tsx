@@ -10,6 +10,7 @@ import { ApiError, createInquiry } from "../../../lib/api";
 import { Icon } from "../../ui/Icon";
 import { SectionHeading } from "../../ui/SectionHeading";
 import type { Stay } from "../../../lib/stay";
+import { DateInput } from "./DateInput";
 import { FieldError } from "./FieldError";
 import { RequestSent } from "./RequestSent";
 import type { FormErrors, FormValues } from "./types";
@@ -110,6 +111,9 @@ export function Contact({ stay }: ContactProps) {
       setConfirmation(null);
     }
   }
+
+  // Neither date can be in the past.
+  const today = toDateKey(new Date());
 
   const setField = (field: keyof FormValues) => (value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
@@ -261,16 +265,16 @@ export function Contact({ stay }: ContactProps) {
                   {t.contact.checkIn}
                   <Required />
                 </label>
-                <input
+                <DateInput
                   id={`${formId}-checkIn`}
                   name="checkIn"
-                  aria-required="true"
-                  type="date"
+                  min={today}
                   value={values.checkIn}
-                  onChange={(event) => setField("checkIn")(event.target.value)}
-                  aria-invalid={Boolean(errors.checkIn)}
-                  aria-describedby={describedBy("checkIn")}
-                  className={`${fieldClass} h-[52px] [color-scheme:dark]`}
+                  placeholder={t.contact.placeholders.date}
+                  onChange={setField("checkIn")}
+                  invalid={Boolean(errors.checkIn)}
+                  describedBy={describedBy("checkIn")}
+                  className={fieldClass}
                 />
                 <FieldError id={`${formId}-checkIn-error`} message={errors.checkIn} />
               </div>
@@ -280,17 +284,16 @@ export function Contact({ stay }: ContactProps) {
                   {t.contact.checkOut}
                   <Required />
                 </label>
-                <input
+                <DateInput
                   id={`${formId}-checkOut`}
                   name="checkOut"
-                  aria-required="true"
-                  type="date"
-                  min={values.checkIn || undefined}
+                  min={values.checkIn || today}
                   value={values.checkOut}
-                  onChange={(event) => setField("checkOut")(event.target.value)}
-                  aria-invalid={Boolean(errors.checkOut)}
-                  aria-describedby={describedBy("checkOut")}
-                  className={`${fieldClass} h-[52px] [color-scheme:dark]`}
+                  placeholder={t.contact.placeholders.date}
+                  onChange={setField("checkOut")}
+                  invalid={Boolean(errors.checkOut)}
+                  describedBy={describedBy("checkOut")}
+                  className={fieldClass}
                 />
                 <FieldError id={`${formId}-checkOut-error`} message={errors.checkOut} />
               </div>

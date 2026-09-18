@@ -184,6 +184,7 @@ export const he: Dictionary = {
       firstName: "קונסטנטינוס",
       lastName: "פאפאס",
       email: "constantinos@gmail.com",
+      date: "בחירת תאריך",
       message: "שלום, נשמח לארגן שף פרטי לערב ה-15 ביולי. נשמח לדעת אם זה אפשרי.",
     },
     errors: {

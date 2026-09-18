@@ -105,7 +105,7 @@ export interface Dictionary {
     send: string;
     sending: string;
     requiredNote: string;
-    placeholders: { firstName: string; lastName: string; email: string; message: string };
+    placeholders: { firstName: string; lastName: string; email: string; date: string; message: string };
     errors: {
       firstName: string;
       lastName: string;

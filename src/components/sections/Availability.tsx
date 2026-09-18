@@ -30,7 +30,7 @@ interface AvailabilityProps {
 }
 
 const cellBase =
-  "flex h-14 items-center justify-center rounded-md font-sans text-[15px] transition-all duration-150 sm:h-16 sm:text-[16px]";
+  "flex h-11 items-center justify-center rounded-md font-sans text-[15px] transition-all duration-150 sm:h-16 sm:text-[16px]";
 
 export function Availability({ stay, onStayChange, availability }: AvailabilityProps) {
   // `initialMonth` is a factory, so React uses it as a lazy initialiser and the
@@ -94,31 +94,31 @@ export function Availability({ stay, onStayChange, availability }: AvailabilityP
           description={t.availability.description}
         />
 
-        <div className="reveal mx-auto w-full max-w-[800px] rounded-xl bg-white p-5 shadow-panel sm:p-8 lg:p-10">
-          <div className="flex items-center justify-between">
+        <div className="reveal mx-auto w-full max-w-[800px] rounded-xl bg-white p-4 shadow-panel sm:p-8 lg:p-10">
+          <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => setMonth(addMonths(month, -1))}
               disabled={atCurrentMonth}
               aria-label={t.availability.previousMonth}
-              className="flex size-10 items-center justify-center rounded-full bg-sand transition-colors not-disabled:hover:bg-cream disabled:cursor-not-allowed disabled:opacity-35"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sand transition-colors not-disabled:hover:bg-cream disabled:cursor-not-allowed disabled:opacity-35"
             >
               <Icon name="chevronLeft" size={16} className="rtl:-scale-x-100" />
             </button>
-            <h3 className="font-serif text-[24px] text-navy sm:text-[28px]" aria-live="polite">
+            <h3 className="font-serif text-[22px] whitespace-nowrap text-navy sm:text-[28px]" aria-live="polite">
               {formatMonth(month, meta.locale)}
             </h3>
             <button
               type="button"
               onClick={() => setMonth(addMonths(month, 1))}
               aria-label={t.availability.nextMonth}
-              className="flex size-10 items-center justify-center rounded-full bg-sand transition-colors hover:bg-cream"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sand transition-colors hover:bg-cream"
             >
               <Icon name="chevronRight" size={16} className="rtl:-scale-x-100" />
             </button>
           </div>
 
-          <div className="mt-8 grid grid-cols-7 gap-1.5 sm:gap-2">
+          <div className="mt-6 grid grid-cols-7 gap-1 sm:mt-8 sm:gap-2">
             {weekdayLabels(meta.locale).map((label, day) => (
               <div
                 key={label}
@@ -133,7 +133,7 @@ export function Availability({ stay, onStayChange, availability }: AvailabilityP
             ))}
 
             {cells.map((date, index) => {
-              if (!date) return <div key={`blank-${index}`} className="h-14 sm:h-16" />;
+              if (!date) return <div key={`blank-${index}`} className="h-11 sm:h-16" />;
 
               const state = dayState(date);
               const label = formatLongDate(date, meta.locale);

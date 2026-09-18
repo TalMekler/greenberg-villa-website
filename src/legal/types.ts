@@ -9,7 +9,9 @@
  *  - `{ terms }`: label/detail pairs, rendered as a description list;
  *  - `{ contact: true }`: the operator's contact details, with live links;
  *  - `{ coordinator: true }`: the accessibility coordinator's details, likewise;
- *  - `{ see }`: a link to another legal page, named by its own title.
+ *  - `{ see }`: a link to another legal page, named by its own title;
+ *  - `{ table }`: a data table, with a caption and a header row;
+ *  - `{ cookieSettings: true }`: a button that opens the cookie settings dialog.
  */
 export type LegalBlock =
   | string
@@ -18,7 +20,9 @@ export type LegalBlock =
   | { terms: [term: string, detail: string][] }
   | { contact: true }
   | { coordinator: true }
-  | { see: LegalPage };
+  | { see: LegalPage }
+  | { table: { caption: string; head: string[]; rows: string[][] } }
+  | { cookieSettings: true };
 
 export interface LegalSection {
   /** The same in every language, so a link to #cookies works in all three. */

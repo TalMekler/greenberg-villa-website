@@ -540,18 +540,141 @@ async function legalPage(page: Page, language: Language, doc: (typeof legalPages
     await page.goto(`http://localhost:5199/${language}/${doc}`, { waitUntil: "networkidle0" });
   }
 
-  // Cookie settings (a placeholder for now): leads to the cookies section and focuses its heading.
+  // Cookie settings opens the preferences dialog, and Escape hands focus back to the button.
   if (doc === "terms") {
-    await page.click("#cookie-settings");
-    await page.waitForFunction(() => location.hash === "#cookies");
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const landed = await page.evaluate(() => ({
-      path: location.pathname,
+    await page.focus("#cookie-settings");
+    await page.keyboard.press("Enter");
+    await page.waitForSelector("dialog[open]");
+    const inside = await page.evaluate(() => Boolean(document.activeElement?.closest("dialog[open]")));
+    await page.keyboard.press("Escape");
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const back = await page.evaluate(() => ({
+      open: Boolean(document.querySelector("dialog[open]")),
       focus: document.activeElement?.id,
     }));
-    check(scenario, "cookie-settings", landed.path === `/${language}/privacy` && landed.focus === "cookies-heading",
-      "Cookie settings leads to the cookies section, with focus on its heading", [JSON.stringify(landed)]);
+    check(scenario, "cookie-settings", inside && !back.open && back.focus === "cookie-settings",
+      "Cookie settings opens the dialog with focus inside; Escape returns focus to the button",
+      [JSON.stringify({ inside, ...back })]);
   }
+}
+
+/**
+ * The cookie banner and dialog, from a first visit with nothing stored.
+ * Tabs through the banner, checks Reject is as prominent as Accept, walks the
+ * dialog's focus trap, and checks nothing is stored or set before a choice.
+ */
+async function cookieConsent(page: Page, language: Language) {
+  const scenario = `consent/${language}`;
+  const client = await page.createCDPSession();
+  await client.send("Network.clearBrowserCookies");
+  await openSite(page, language);
+  await page.evaluate(() => localStorage.removeItem("greenberg-villa:cookie-consent"));
+  await page.reload({ waitUntil: "networkidle0" });
+  await page.waitForFunction(() => !document.querySelector('[role="status"][aria-busy]'), { timeout: 20_000 });
+  await new Promise((resolve) => setTimeout(resolve, 900));
+
+  const banner = await page.evaluate(() => {
+    const section = document.querySelector<HTMLElement>("section[aria-label]:has(button)");
+    const buttons = [...(section?.querySelectorAll("button") ?? [])];
+    // Inline rather than a named helper: tsx wraps named functions in a
+    // helper that does not exist inside the page.
+    const looks = buttons.map((b) => {
+      const s = getComputedStyle(b);
+      return `${s.backgroundColor}|${s.color}|${s.fontSize}|${s.fontWeight}|${Math.round(b.getBoundingClientRect().height)}`;
+    });
+    return {
+      found: Boolean(section),
+      visible: section ? section.getBoundingClientRect().height > 0 : false,
+      direction: section ? getComputedStyle(section).direction : "",
+      labels: buttons.map((b) => b.textContent?.trim() ?? ""),
+      sameLook: looks.length >= 2 && looks[0] === looks[1],
+      cookies: document.cookie,
+      stored: localStorage.getItem("greenberg-villa:cookie-consent"),
+      foreignScripts: [...document.scripts].filter((s) => s.src && new URL(s.src).origin !== location.origin).map((s) => s.src),
+    };
+  });
+  check(scenario, "banner-shown", banner.found && banner.visible && banner.labels.length === 3,
+    "A first visit shows the banner with three buttons", [JSON.stringify(banner.labels)]);
+  check(scenario, "banner-equal-choice", banner.sameLook,
+    "Reject and Accept look the same: colour, size and weight");
+  check(scenario, "banner-direction", banner.direction === (language === "he" ? "rtl" : "ltr"),
+    `The banner reads ${language === "he" ? "right-to-left" : "left-to-right"}`, [banner.direction]);
+  check(scenario, "nothing-before-consent", banner.cookies === "" && banner.stored === null && banner.foreignScripts.length === 0,
+    "No cookies, no stored choice and no third-party scripts before a choice", [JSON.stringify(banner)]);
+
+  await runAxe(page, scenario);
+
+  // Keyboard: skip link, then the banner's policy link and its three buttons.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  const stops: string[] = [];
+  for (let i = 0; i < 5; i++) {
+    await page.keyboard.press("Tab");
+    stops.push(await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement;
+      return el.getAttribute("href") ?? el.textContent?.trim() ?? "";
+    }));
+  }
+  check(scenario, "banner-tab-order", stops[0] === "#main" && stops.slice(2).join("|") === banner.labels.join("|"),
+    "Tab order: skip link, the banner's policy link, then Reject, Accept, Customize", [stops.join(" → ")]);
+
+  // Customize (focused now) opens the dialog; Tab stays inside; Escape returns to Customize.
+  await page.keyboard.press("Enter");
+  await page.waitForSelector("dialog[open]");
+  const trapped: boolean[] = [];
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press("Tab");
+    trapped.push(await page.evaluate(() => Boolean(document.activeElement?.closest("dialog[open]")) || document.activeElement === document.body));
+  }
+  check(scenario, "dialog-focus-trap", trapped.every(Boolean), "Tab never leaves the open dialog");
+  await runAxe(page, `${scenario}/dialog`);
+  await page.keyboard.press("Escape");
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  const afterEscape = await page.evaluate(() => ({
+    open: Boolean(document.querySelector("dialog[open]")),
+    focus: document.activeElement?.textContent?.trim(),
+    stored: localStorage.getItem("greenberg-villa:cookie-consent"),
+  }));
+  check(scenario, "dialog-escape", !afterEscape.open && afterEscape.focus === banner.labels[2] && afterEscape.stored === null,
+    "Escape closes the dialog without choosing, and focus returns to Customize", [JSON.stringify(afterEscape)]);
+
+  // Reject: stored as a refusal, banner gone, focus in <main>, the change announced.
+  await page.keyboard.down("Shift");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await page.keyboard.up("Shift");
+  await page.keyboard.press("Enter");
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  const rejected = await page.evaluate(() => ({
+    record: JSON.parse(localStorage.getItem("greenberg-villa:cookie-consent") ?? "null"),
+    banner: Boolean(document.querySelector("section[aria-label]:has(button)")),
+    focus: document.activeElement?.id,
+    announced: [...document.querySelectorAll('[role="status"]')].some((el) => (el.textContent ?? "").trim() !== ""),
+    cookies: document.cookie,
+  }));
+  check(scenario, "reject",
+    rejected.record?.analytics === false && rejected.record?.marketing === false && !rejected.banner &&
+      rejected.focus === "main" && rejected.announced && rejected.cookies === "",
+    "Reject stores a refusal, hides the banner, moves focus to <main> and announces it", [JSON.stringify(rejected)]);
+
+  await page.reload({ waitUntil: "networkidle0" });
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  check(scenario, "choice-remembered",
+    await page.evaluate(() => !document.querySelector("section[aria-label]:has(button)")),
+    "The banner stays away after a reload");
+
+  // An expired choice (over 6 months old) asks again.
+  await page.evaluate(() => {
+    const record = JSON.parse(localStorage.getItem("greenberg-villa:cookie-consent")!);
+    record.decidedAt = Date.now() - 200 * 24 * 60 * 60 * 1000;
+    localStorage.setItem("greenberg-villa:cookie-consent", JSON.stringify(record));
+  });
+  await page.reload({ waitUntil: "networkidle0" });
+  await page.waitForFunction(() => !document.querySelector('[role="status"][aria-busy]'), { timeout: 20_000 });
+  check(scenario, "choice-expires",
+    await page.evaluate(() => Boolean(document.querySelector("section[aria-label]:has(button)"))),
+    "A choice older than 6 months is asked for again");
+  await page.evaluate(() => localStorage.removeItem("greenberg-villa:cookie-consent"));
 }
 
 async function adminPages(page: Page) {
@@ -617,6 +740,10 @@ try {
         () => legalPage(page, language, doc),
       ]),
     ),
+    ...languages.map((language): [string, () => Promise<void>] => [
+      `consent/${language}`,
+      () => cookieConsent(page, language),
+    ]),
     ["public/en/reduced-motion", () => reducedMotion(page)],
     ["admin", () => adminPages(page)],
   ];

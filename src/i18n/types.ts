@@ -155,5 +155,34 @@ export interface Dictionary {
     /** The form showed an older policy than the server's; a reload shows the new one. */
     consentOutdated: string;
   };
+  /** The cookie banner and the cookie settings dialog. */
+  consent: {
+    /** Names the banner's landmark for screen readers. */
+    bannerLabel: string;
+    bannerTitle: string;
+    bannerText: string;
+    /** Link from the banner to the cookies section of the privacy policy. */
+    policyLink: string;
+    acceptAll: string;
+    rejectAll: string;
+    customize: string;
+    dialogTitle: string;
+    dialogIntro: string;
+    necessary: string;
+    necessaryText: string;
+    alwaysOn: string;
+    analytics: string;
+    analyticsText: string;
+    marketing: string;
+    marketingText: string;
+    /** Under a category that has nothing in it today. */
+    notInUse: string;
+    save: string;
+    close: string;
+    /** Announced to screen readers once a choice is stored. */
+    saved: string;
+    /** The button inside the privacy policy's cookies section. */
+    change: string;
+  };
   units: { night: string; nights: string; guest: string; guests: string };
 }

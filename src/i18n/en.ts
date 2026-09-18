@@ -248,5 +248,31 @@ export const en: Dictionary = {
     consentOutdated:
       "Our Privacy Policy has just been updated. Reload the page to read it, then send your request again.",
   },
+  consent: {
+    bannerLabel: "Cookie consent",
+    bannerTitle: "Cookies on Green Villa",
+    bannerText:
+      "We use only what the site needs to work, such as remembering your language. Analytics and marketing cookies stay off unless you allow them — and we use none at the moment.",
+    policyLink: "How we use cookies",
+    acceptAll: "Accept all",
+    rejectAll: "Reject all",
+    customize: "Customize",
+    dialogTitle: "Cookie settings",
+    dialogIntro:
+      "Choose which kinds of cookies we may use. You can change your mind at any time from “Cookie settings” at the bottom of every page. Your choice is kept for 6 months.",
+    necessary: "Strictly necessary",
+    necessaryText:
+      "Needed for the site to work: your language, this choice, protection against bots, and the hosts’ sign-in. They cannot be switched off.",
+    alwaysOn: "Always on",
+    analytics: "Analytics",
+    analyticsText: "Would help us understand how visitors use the site, by counting visits and pages viewed.",
+    marketing: "Marketing",
+    marketingText: "Would let us or advertising partners show you relevant offers on other sites.",
+    notInUse: "Not used on this site at the moment.",
+    save: "Save my choices",
+    close: "Close",
+    saved: "Your cookie settings have been saved.",
+    change: "Change cookie settings",
+  },
   units: { night: "night", nights: "nights", guest: "guest", guests: "guests" },
 };

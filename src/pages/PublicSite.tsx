@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CookieConsent } from "../components/layout/CookieConsent";
 import { Footer } from "../components/layout/Footer";
 import { Navbar } from "../components/layout/Navbar";
 import { About } from "../components/sections/About";
@@ -106,6 +107,8 @@ export default function PublicSite() {
         >
           {t.nav.skipToContent}
         </a>
+        {/* Inside the inert wrapper: under the cover it would be reachable but unseen. */}
+        <CookieConsent />
         <Navbar />
         {/* tabIndex -1 so the skip link moves keyboard focus here, not just the scroll. */}
         <main id="main" tabIndex={-1}>

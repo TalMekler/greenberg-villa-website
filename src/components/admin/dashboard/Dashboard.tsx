@@ -18,6 +18,7 @@ import type { VillaLocation } from "../../../lib/location";
 import type { AdminUser } from "../../../lib/user";
 import { BookingPriceForm } from "../BookingPriceForm";
 import { LocationPanel } from "../LocationPanel";
+import { NotificationsPanel } from "../NotificationsPanel";
 import { ChangePasswordForm } from "../auth";
 import { ImagesPanel } from "../images";
 import { StatsPanel } from "../stats";
@@ -535,6 +536,10 @@ export function Dashboard({
 
           <div className="rounded-lg border border-line bg-white p-6 shadow-card">
             <UsersPanel currentUserId={user.id} />
+          </div>
+
+          <div className="rounded-lg border border-line bg-white p-6 shadow-card">
+            <NotificationsPanel />
           </div>
         </section>
       </main>

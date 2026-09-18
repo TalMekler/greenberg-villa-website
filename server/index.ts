@@ -57,7 +57,7 @@ import {
   type PriceMode,
 } from "../src/lib/inquiry";
 import { createInquiry, deleteInquiry, listInquiries, setPrice, updateStatus } from "./store";
-import { notificationsConfigured, notifyNewInquiry } from "./notify";
+import { notificationsConfigured, notifyNewInquiry, sendTestEmail } from "./notify";
 
 // Reads ADMIN_USERNAME / ADMIN_PASSWORD without committing them to the repo.
 try {
@@ -544,6 +544,17 @@ app.post("/api/account/password", requireAuth, async (request, response) => {
   // Any other session for this account is now stale.
   await endSessionsForUser(user.id, request);
   response.json({ user: await getById(user.id) });
+});
+
+/**
+ * Admin only: sends a sample inquiry email and returns what the mail provider
+ * said, so a misconfiguration shows up on the admin page rather than only in
+ * the server log. Replies to the test go to whoever pressed the button.
+ */
+app.post("/api/notifications/test", requireSettledPassword, async (request, response) => {
+  const userId = await sessionUserId(request);
+  const user = userId ? await getById(userId) : null;
+  response.json({ result: await sendTestEmail(user?.email ?? "") });
 });
 
 app.get("/api/users", requireSettledPassword, async (_request, response) => {

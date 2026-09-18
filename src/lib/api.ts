@@ -2,6 +2,7 @@ import type { BookingPrice, Inquiry, InquiryInput, InquiryStatus } from "./inqui
 import type { AdminUser } from "./user";
 import type { ExploreSlug, SingleImageKey, SiteImages } from "./site-images";
 import type { VillaLocation } from "./location";
+import type { NotifyResult } from "./notify";
 
 /** Thrown for any non-2xx response; `fieldErrors` carries the server's per-field messages. */
 export class ApiError extends Error {
@@ -118,6 +119,14 @@ export async function setBookingPrice(
     body: JSON.stringify(price ?? { amount: null }),
   });
   return inquiry;
+}
+
+/** Sends a sample inquiry email; resolves with the outcome even when sending failed. */
+export async function sendTestEmail(): Promise<NotifyResult> {
+  const { result } = await request<{ result: NotifyResult }>("/api/notifications/test", {
+    method: "POST",
+  });
+  return result;
 }
 
 export async function fetchUsers(): Promise<AdminUser[]> {

@@ -1,3 +1,4 @@
+import { contactNumbers } from "../src/lib/contact";
 import type { Language } from "../src/i18n/types";
 import type { Inquiry } from "../src/lib/inquiry";
 import type { NotifyResult } from "../src/lib/notify";
@@ -8,8 +9,8 @@ import { listUsers } from "./users";
   there is no SDK to bundle. Two go out per inquiry:
 
   - to the hosts: the inquiry details, with Reply-To set to the guest;
-  - to the guest: a confirmation in the language they used on the site, with
-    Reply-To set to the hosts.
+  - to the guest: a confirmation in the language they used on the site. The
+    sender takes no replies, so it points them to WhatsApp and the phone.
 
   Hosts are NOTIFY_EMAIL (comma-separated) or, when that is unset, every admin
   account. Without RESEND_API_KEY nothing is sent: the inquiry is still saved
@@ -142,7 +143,10 @@ interface GuestCopy {
   dir: "ltr" | "rtl";
   subject: string;
   greeting: (firstName: string) => string;
-  paragraphs: string[];
+  intro: string;
+  /** Where to ask questions instead — this address does not take replies. */
+  contact: (whatsapp: string, phone: string) => string;
+  noReply: string;
   summary: string;
   dates: string;
   nights: string;
@@ -157,10 +161,11 @@ const guestCopy: Record<Language, GuestCopy> = {
     dir: "ltr",
     subject: "We've received your booking request – Green Villa",
     greeting: (firstName) => `Hi ${firstName},`,
-    paragraphs: [
+    intro:
       "Thank you for your booking request at Green Villa. We've received it and will be in touch soon to confirm the details and finalise your booking.",
-      "If you have any questions in the meantime, just reply to this email.",
-    ],
+    contact: (whatsapp, phone) =>
+      `Questions in the meantime? Reach us on WhatsApp at ${whatsapp} or by phone at ${phone}.`,
+    noReply: "This is an automated message, so please don't reply to this email.",
     summary: "Your request",
     dates: "Dates",
     nights: "nights",
@@ -173,10 +178,11 @@ const guestCopy: Record<Language, GuestCopy> = {
     dir: "rtl",
     subject: "קיבלנו את בקשת ההזמנה שלך – גרין וילה",
     greeting: (firstName) => `שלום ${firstName},`,
-    paragraphs: [
+    intro:
       "תודה על בקשת ההזמנה בגרין וילה. קיבלנו אותה וניצור איתך קשר בקרוב כדי לאשר את הפרטים ולסגור את ההזמנה.",
-      "אם יש לך שאלות בינתיים, אפשר פשוט להשיב למייל הזה.",
-    ],
+    contact: (whatsapp, phone) =>
+      `יש שאלות בינתיים? אפשר לפנות אלינו בוואטסאפ ${whatsapp} או בטלפון ${phone}.`,
+    noReply: "זוהי הודעה אוטומטית, ולכן אין להשיב למייל הזה.",
     summary: "פרטי הבקשה",
     dates: "תאריכים",
     nights: "לילות",
@@ -189,10 +195,11 @@ const guestCopy: Record<Language, GuestCopy> = {
     dir: "ltr",
     subject: "Λάβαμε το αίτημα κράτησής σας – Green Villa",
     greeting: (firstName) => `Γεια σας ${firstName},`,
-    paragraphs: [
+    intro:
       "Σας ευχαριστούμε για το αίτημα κράτησης στη Green Villa. Το λάβαμε και θα επικοινωνήσουμε μαζί σας σύντομα για να επιβεβαιώσουμε τις λεπτομέρειες και να ολοκληρώσουμε την κράτησή σας.",
-      "Αν έχετε οποιαδήποτε ερώτηση στο μεταξύ, απλώς απαντήστε σε αυτό το email.",
-    ],
+    contact: (whatsapp, phone) =>
+      `Για ερωτήσεις στο μεταξύ, επικοινωνήστε μαζί μας στο WhatsApp ${whatsapp} ή τηλεφωνικά στο ${phone}.`,
+    noReply: "Αυτό είναι ένα αυτόματο μήνυμα, γι' αυτό παρακαλούμε μην απαντήσετε σε αυτό το email.",
     summary: "Το αίτημά σας",
     dates: "Ημερομηνίες",
     nights: "διανυκτερεύσεις",
@@ -203,43 +210,49 @@ const guestCopy: Record<Language, GuestCopy> = {
   },
 };
 
-function guestEmail(inquiry: Inquiry, language: Language, replyTo: string[]): Email {
+function guestEmail(inquiry: Inquiry, language: Language): Email {
   const copy = guestCopy[language];
   const rows: [string, string][] = [
     [copy.dates, `${inquiry.checkIn} → ${inquiry.checkOut} (${nights(inquiry)} ${copy.nights})`],
     [copy.guests, inquiry.guests],
   ];
   const greeting = copy.greeting(inquiry.firstName);
+  // The same numbers the contact section shows, so the two never disagree.
+  const { whatsapp, phone } = contactNumbers;
   const style = "font-family:sans-serif;font-size:15px;line-height:1.55";
+
+  // Phone numbers are isolated as left-to-right, or a Hebrew email shows their
+  // digit groups in reverse order.
+  const isolate = (value: string) => `⁦${value}⁩`;
+  const ltrSpan = (value: string) => `<span dir="ltr">${escapeHtml(value)}</span>`;
 
   return {
     to: [inquiry.email],
-    replyTo,
     subject: copy.subject,
     text: [
       greeting,
       "",
-      copy.paragraphs[0],
+      copy.intro,
       "",
       `${copy.summary}:`,
       ...rows.map(([label, value]) => `${label}: ${value}`),
       "",
-      ...copy.paragraphs.slice(1),
+      copy.contact(isolate(whatsapp), isolate(phone)),
       "",
       copy.signOff,
       copy.hosts,
       copy.place,
+      "",
+      copy.noReply,
     ].join("\n"),
     html: `<div dir="${copy.dir}" style="${style}">
 <p>${escapeHtml(greeting)}</p>
-<p>${copy.paragraphs[0]}</p>
+<p>${copy.intro}</p>
 <p style="margin-bottom:4px"><strong>${copy.summary}</strong></p>
 ${htmlTable(rows)}
-${copy.paragraphs
-  .slice(1)
-  .map((paragraph) => `<p>${paragraph}</p>`)
-  .join("\n")}
+<p>${copy.contact(ltrSpan(whatsapp), ltrSpan(phone))}</p>
 <p>${copy.signOff}<br>${copy.hosts}<br><span style="color:#666">${copy.place}</span></p>
+<p style="font-size:12px;color:#888">${copy.noReply}</p>
 </div>`,
   };
 }
@@ -258,7 +271,7 @@ export async function notifyNewInquiry(inquiry: Inquiry, language: Language): Pr
 
   const [toHosts, toGuest] = await Promise.all([
     send(hostEmail(inquiry, hostAddresses)),
-    send(guestEmail(inquiry, language, hostAddresses)),
+    send(guestEmail(inquiry, language)),
   ]);
   if (!toHosts.sent) console.error(`Inquiry email to hosts failed: ${toHosts.error}`);
   if (!toGuest.sent) console.error(`Confirmation email to guest failed: ${toGuest.error}`);

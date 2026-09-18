@@ -1,4 +1,5 @@
 import type { IconName } from "../assets/icons";
+import { contactNumbers } from "../lib/contact";
 import { exploreSlugs, type ExploreSlug } from "../lib/site-images";
 import type { NavLink } from "../types";
 
@@ -20,9 +21,15 @@ export const exploreSlugOrder: ExploreSlug[] = [...exploreSlugs];
 /** Step icons, in order; the copy lives in the dictionaries. */
 export const transitIcons: IconName[] = ["plane", "car", "ship"];
 
+const digits = (value: string) => value.replace(/\D/g, "");
+
 /** Icons and links; the labels come from the dictionaries. */
 export const contactChannels = [
-  { icon: "messageSquare", href: "https://wa.me/306912345678", value: "+30 691 234 5678" },
-  { icon: "phone", href: "tel:+302109876543", value: "+30 210 987 6543" },
+  {
+    icon: "messageSquare",
+    href: `https://wa.me/${digits(contactNumbers.whatsapp)}`,
+    value: contactNumbers.whatsapp,
+  },
+  { icon: "phone", href: `tel:+${digits(contactNumbers.phone)}`, value: contactNumbers.phone },
   { icon: "mail", href: "mailto:welcome@greenvilla.gr", value: "welcome@greenvilla.gr" },
 ] as const satisfies readonly { icon: IconName; href: string; value: string }[];

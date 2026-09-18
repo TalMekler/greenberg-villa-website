@@ -222,7 +222,7 @@ export const el: Dictionary = {
     channels: { whatsapp: "WhatsApp", phone: "Τηλέφωνο", email: "Email" },
   },
   footer: {
-    rights: "© 2025 Green Villa. Με επιφύλαξη παντός δικαιώματος.",
+    rights: "© 2026 Green Villa. Με επιφύλαξη παντός δικαιώματος.",
     designed: "Σχεδιασμένο στην Ελλάδα",
     instagram: "Green Villa στο Instagram",
     facebook: "Green Villa στο Facebook",

@@ -24,7 +24,8 @@ export function Transit() {
               className="reveal flex flex-col gap-6 rounded-lg border border-line bg-sand p-8 transition-colors duration-300 hover:border-terracotta/40 lg:p-10"
             >
               <div className="flex items-center justify-between">
-                <span className="font-serif text-[28px] text-terracotta">{String(index + 1).padStart(2, "0")}</span>
+                {/* The list already numbers the steps for screen readers. */}
+                <span aria-hidden="true" className="font-serif text-[28px] text-terracotta-deep">{String(index + 1).padStart(2, "0")}</span>
                 <span className="flex size-11 items-center justify-center rounded-full bg-white">
                   <Icon name={transitIcons[index]} size={20} />
                 </span>

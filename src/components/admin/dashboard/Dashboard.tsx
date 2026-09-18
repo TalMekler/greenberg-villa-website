@@ -142,14 +142,22 @@ export function Dashboard({
 
   return (
     <div className="min-h-dvh bg-shell">
-      <header className="bg-navy px-5 py-5 sm:px-8 lg:px-12">
+      <a
+        href="#admin-main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:start-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-sans focus:font-semibold focus:text-navy"
+      >
+        Skip to content
+      </a>
+      <header className="on-dark bg-navy px-5 py-5 sm:px-8 lg:px-12">
         <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="font-serif text-[22px] text-white">Green Villa</p>
-            <p className="font-sans text-[12px] tracking-[0.08em] text-cream uppercase">
-              Booking admin
-            </p>
-            <p className="mt-1 font-sans text-[12px] break-all text-cream/70">{user.email}</p>
+            <h1 className="font-serif text-[22px] text-white">
+              Green Villa
+              <span className="block font-sans text-[12px] tracking-[0.08em] text-cream uppercase">
+                Booking admin
+              </span>
+            </h1>
+            <p className="mt-1 font-sans text-[12px] break-all text-cream/80">{user.email}</p>
           </div>
           <div className="flex items-center gap-3">
             <Link
@@ -171,9 +179,9 @@ export function Dashboard({
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-5 py-10 sm:px-8 lg:px-12">
+      <main id="admin-main" tabIndex={-1} className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-5 py-10 sm:px-8 lg:px-12">
         {error ? (
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-terracotta bg-terracotta/10 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-terracotta-deep bg-terracotta/10 px-4 py-3">
             <p role="alert" className="font-sans text-[13px] text-ink">
               {error}
             </p>
@@ -188,7 +196,7 @@ export function Dashboard({
         ) : null}
 
         {actionError ? (
-          <p role="alert" className="font-sans text-[13px] text-terracotta">
+          <p role="alert" className="font-sans text-[13px] text-terracotta-deep">
             {actionError}
           </p>
         ) : null}
@@ -310,7 +318,7 @@ export function Dashboard({
                                 </button>
                               </div>
                               {conflict ? (
-                                <span className="text-[11px] text-terracotta">
+                                <span className="text-[11px] text-terracotta-deep">
                                   Overlaps dates already taken
                                 </span>
                               ) : null}
@@ -326,7 +334,7 @@ export function Dashboard({
                                     type="button"
                                     disabled={busyId === inquiry.id}
                                     onClick={() => void removeInquiry(inquiry.id)}
-                                    className={`${actionButton} bg-terracotta text-white hover:bg-[#b96b4f]`}
+                                    className={`${actionButton} bg-terracotta-deep text-white hover:bg-[#b96b4f]`}
                                   >
                                     Yes, delete
                                   </button>
@@ -343,7 +351,7 @@ export function Dashboard({
                               <button
                                 type="button"
                                 onClick={() => setPendingDelete(inquiry.id)}
-                                className={`${actionButton} border border-line text-slate hover:border-terracotta hover:text-terracotta`}
+                                className={`${actionButton} border border-line text-slate hover:border-terracotta-deep hover:text-terracotta-deep`}
                               >
                                 Delete
                               </button>
@@ -415,7 +423,7 @@ export function Dashboard({
                             void changeStatus(booking.id, "cancelled");
                             setPendingCancel(null);
                           }}
-                          className={`${actionButton} bg-terracotta text-white hover:bg-[#b96b4f]`}
+                          className={`${actionButton} bg-terracotta-deep text-white hover:bg-[#b96b4f]`}
                         >
                           Yes, cancel
                         </button>
@@ -432,7 +440,7 @@ export function Dashboard({
                     <button
                       type="button"
                       onClick={() => setPendingCancel(booking.id)}
-                      className={`${actionButton} border border-terracotta text-terracotta hover:bg-terracotta hover:text-white`}
+                      className={`${actionButton} border border-terracotta-deep text-terracotta-deep hover:bg-terracotta-deep hover:text-white`}
                     >
                       Cancel booking
                     </button>
@@ -462,7 +470,7 @@ export function Dashboard({
           <div className="rounded-lg border border-line bg-white p-6 shadow-card">
             {imagesError ? (
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <p role="alert" className="font-sans text-[13px] text-terracotta">
+                <p role="alert" className="font-sans text-[13px] text-terracotta-deep">
                   {imagesError}
                 </p>
                 <button
@@ -490,7 +498,7 @@ export function Dashboard({
           <div className="rounded-lg border border-line bg-white p-6 shadow-card">
             {locationError ? (
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <p role="alert" className="font-sans text-[13px] text-terracotta">
+                <p role="alert" className="font-sans text-[13px] text-terracotta-deep">
                   {locationError}
                 </p>
                 <button

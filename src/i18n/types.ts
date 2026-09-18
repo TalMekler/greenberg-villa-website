@@ -33,6 +33,8 @@ export interface Dictionary {
     openMenu: string;
     closeMenu: string;
     skipToContent: string;
+    mainNavLabel: string;
+    footerNavLabel: string;
   };
   loader: {
     /** Announced to screen readers and shown under the mark. */
@@ -49,13 +51,16 @@ export interface Dictionary {
     cta: string;
     stats: { title: string; detail: string }[];
   };
-  gallery: { eyebrow: string; title: string; description: string; open: string; close: string; previous: string; next: string };
+  gallery: { eyebrow: string; title: string; description: string; open: string; close: string; previous: string; next: string; dialogLabel: string };
   location: {
     eyebrow: string;
     title: string;
     description: string;
     mapLabel: string;
     openInMaps: string;
+    mapAria: string;
+    zoomIn: string;
+    zoomOut: string;
     highlights: { title: string; distance: string; description: string }[];
   };
   explore: {
@@ -99,6 +104,7 @@ export interface Dictionary {
     message: string;
     send: string;
     sending: string;
+    requiredNote: string;
     placeholders: { firstName: string; lastName: string; email: string; message: string };
     errors: {
       firstName: string;
@@ -112,7 +118,7 @@ export interface Dictionary {
       generic: string;
     };
     sent: { title: string; body: string; dates: string; guests: string; replyTo: string; another: string };
-    hosts: { label: string; names: string; quote: string };
+    hosts: { label: string; names: string; photoAlt: string; quote: string };
     channels: { whatsapp: string; phone: string; email: string };
   };
   footer: { rights: string; designed: string; instagram: string; facebook: string };

@@ -13,7 +13,8 @@ export function MapPanel({ location }: { location: VillaLocation }) {
           <p className="font-sans text-[12px] font-bold tracking-[0.08em] text-slate uppercase">
             {t.location.mapLabel}
           </p>
-          <p className="font-sans text-[12px] text-slate/80">
+          {/* Digits, degree signs and N/E read left to right in every language. */}
+          <p dir="ltr" className="font-sans text-[12px] text-slate rtl:text-end">
             {formatCoordinates(location.latitude, location.longitude)}
           </p>
         </div>
@@ -28,7 +29,13 @@ export function MapPanel({ location }: { location: VillaLocation }) {
       </div>
 
       <div className="relative flex-1 border-t border-line-warm">
-        <VillaMap location={location} label="Green Villa" />
+        <VillaMap
+          location={location}
+          label="Green Villa"
+          ariaLabel={t.location.mapAria}
+          zoomInTitle={t.location.zoomIn}
+          zoomOutTitle={t.location.zoomOut}
+        />
       </div>
     </div>
   );

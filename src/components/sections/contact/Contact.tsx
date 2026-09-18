@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { images } from "../../../assets/images";
 import { contactChannels } from "../../../data/site";
 import { useLanguage } from "../../../i18n";
@@ -26,10 +26,24 @@ const emptyValues: FormValues = {
   message: "",
 };
 
+// The border and placeholder are strong enough to find the field by (3:1 and
+// 4.5:1 on navy); focus adds the page's cream ring on top of the border change.
 const fieldClass =
-  "w-full rounded-[4px] border border-navy-line bg-[rgba(42,78,112,0.5)] px-4 font-sans text-[14px] text-cream transition-colors placeholder:text-cream/45 hover:border-cream/40 focus:border-cream focus:outline-none";
+  "w-full rounded-[4px] border border-cream/50 bg-[rgba(42,78,112,0.5)] px-4 font-sans text-[14px] text-cream transition-colors placeholder:text-cream/70 hover:border-cream/80 focus:border-cream";
 
 const labelClass = "font-sans text-[12px] font-bold tracking-[0.06em] text-cream uppercase";
+
+/** The visible required marker; the field itself carries aria-required. */
+function Required() {
+  return (
+    <span aria-hidden="true" className="text-terracotta-soft">
+      {" *"}
+    </span>
+  );
+}
+
+/** Validated fields, in the order they appear — the first failing one gets focus. */
+const fieldOrder = ["firstName", "lastName", "email", "checkIn", "checkOut"] as const;
 
 /** Largest party the villa accepts. */
 const maxGuests = 12;
@@ -66,6 +80,7 @@ const channelLabels = {
 export function Contact({ stay }: ContactProps) {
   const { t, language } = useLanguage();
   const formId = useId();
+  const formRef = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState<FormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [confirmation, setConfirmation] = useState<FormValues | null>(null);
@@ -106,6 +121,10 @@ export function Contact({ stay }: ContactProps) {
 
     if (Object.keys(nextErrors).length > 0) {
       setConfirmation(null);
+      // One announcement for the whole form, then focus on the first field to
+      // fix — its error is read with it through aria-describedby.
+      setSubmitError(t.contact.errors.fieldsHighlighted);
+      focusFirstInvalid(nextErrors);
       return;
     }
 
@@ -121,6 +140,7 @@ export function Contact({ stay }: ContactProps) {
       if (caught instanceof ApiError && caught.fieldErrors) {
         setErrors(caught.fieldErrors as FormErrors);
         setSubmitError(t.contact.errors.fieldsHighlighted);
+        focusFirstInvalid(caught.fieldErrors as FormErrors);
       } else {
         setSubmitError(
           caught instanceof Error ? caught.message : t.contact.errors.generic,
@@ -131,11 +151,16 @@ export function Contact({ stay }: ContactProps) {
     }
   };
 
+  function focusFirstInvalid(found: FormErrors) {
+    const field = fieldOrder.find((name) => found[name]);
+    if (field) formRef.current?.querySelector<HTMLElement>(`[name="${field}"]`)?.focus();
+  }
+
   const describedBy = (field: keyof FormValues) =>
     errors[field] ? `${formId}-${field}-error` : undefined;
 
   return (
-    <section id="contact" className="bg-navy px-5 py-20 sm:px-8 lg:px-20 lg:py-[120px]">
+    <section id="contact" className="on-dark bg-navy px-5 py-20 sm:px-8 lg:px-20 lg:py-[120px]">
       <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-12 lg:gap-[96px]">
         <SectionHeading
           eyebrow={t.contact.eyebrow}
@@ -150,18 +175,23 @@ export function Contact({ stay }: ContactProps) {
             <RequestSent request={confirmation} onReset={() => setConfirmation(null)} />
           ) : (
           <form
+            ref={formRef}
             noValidate
             onSubmit={(event) => void handleSubmit(event)}
             className={`reveal flex w-full flex-col gap-6 lg:w-[55%] ${hasSent ? "is-visible" : ""}`}
           >
+            <p className="font-sans text-[13px] text-cream">{t.contact.requiredNote}</p>
+
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${formId}-firstName`} className={labelClass}>
                   {t.contact.firstName}
+                  <Required />
                 </label>
                 <input
                   id={`${formId}-firstName`}
                   name="firstName"
+                  aria-required="true"
                   autoComplete="given-name"
                   placeholder={t.contact.placeholders.firstName}
                   value={values.firstName}
@@ -176,10 +206,12 @@ export function Contact({ stay }: ContactProps) {
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${formId}-lastName`} className={labelClass}>
                   {t.contact.lastName}
+                  <Required />
                 </label>
                 <input
                   id={`${formId}-lastName`}
                   name="lastName"
+                  aria-required="true"
                   autoComplete="family-name"
                   placeholder={t.contact.placeholders.lastName}
                   value={values.lastName}
@@ -195,10 +227,12 @@ export function Contact({ stay }: ContactProps) {
             <div className="flex flex-col gap-2">
               <label htmlFor={`${formId}-email`} className={labelClass}>
                 {t.contact.email}
+                <Required />
               </label>
               <input
                 id={`${formId}-email`}
                 name="email"
+                aria-required="true"
                 type="email"
                 autoComplete="email"
                 placeholder={t.contact.placeholders.email}
@@ -215,10 +249,12 @@ export function Contact({ stay }: ContactProps) {
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${formId}-checkIn`} className={labelClass}>
                   {t.contact.checkIn}
+                  <Required />
                 </label>
                 <input
                   id={`${formId}-checkIn`}
                   name="checkIn"
+                  aria-required="true"
                   type="date"
                   value={values.checkIn}
                   onChange={(event) => setField("checkIn")(event.target.value)}
@@ -232,10 +268,12 @@ export function Contact({ stay }: ContactProps) {
               <div className="flex flex-col gap-2">
                 <label htmlFor={`${formId}-checkOut`} className={labelClass}>
                   {t.contact.checkOut}
+                  <Required />
                 </label>
                 <input
                   id={`${formId}-checkOut`}
                   name="checkOut"
+                  aria-required="true"
                   type="date"
                   min={values.checkIn || undefined}
                   value={values.checkOut}
@@ -296,7 +334,7 @@ export function Contact({ stay }: ContactProps) {
                 {sending ? t.contact.sending : t.contact.send}
               </button>
               {submitError ? (
-                <p role="alert" className="font-sans text-[14px] text-terracotta">
+                <p role="alert" className="font-sans text-[14px] text-terracotta-soft">
                   {submitError}
                 </p>
               ) : null}
@@ -308,7 +346,7 @@ export function Contact({ stay }: ContactProps) {
             <div className="reveal flex items-center gap-6 rounded-lg border border-navy-line bg-[rgba(42,78,112,0.25)] p-6">
               <img
                 src={images.hosts}
-                alt="Eti and Zeevik, the hosts of Green Villa"
+                alt={t.contact.hosts.photoAlt}
                 width={80}
                 height={80}
                 className="size-20 shrink-0 rounded-full object-cover"
@@ -338,7 +376,10 @@ export function Contact({ stay }: ContactProps) {
                       <span className="font-sans text-[11px] font-bold tracking-[0.06em] text-cream uppercase">
                         {t.contact.channels[channelLabels[channel.icon]]}
                       </span>
-                      <span className="font-sans text-[16px] text-white">{channel.value}</span>
+                      {/* Numbers and addresses read left to right, even on the Hebrew page. */}
+                      <span dir="ltr" className="font-sans text-[16px] text-white rtl:text-end">
+                        {channel.value}
+                      </span>
                     </span>
                   </a>
                 </li>

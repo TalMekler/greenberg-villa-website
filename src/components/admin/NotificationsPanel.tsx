@@ -46,7 +46,7 @@ export function NotificationsPanel() {
       {result ? (
         <div
           role={result.sent ? "status" : "alert"}
-          className={`mt-4 font-sans text-[13px] leading-[1.5] ${result.sent ? "text-navy" : "text-terracotta"}`}
+          className={`mt-4 font-sans text-[13px] leading-[1.5] ${result.sent ? "text-navy" : "text-terracotta-deep"}`}
         >
           <p>
             {result.sent

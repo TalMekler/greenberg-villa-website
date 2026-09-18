@@ -12,6 +12,8 @@ export const en: Dictionary = {
     openMenu: "Open menu",
     closeMenu: "Close menu",
     skipToContent: "Skip to content",
+    mainNavLabel: "Main",
+    footerNavLabel: "Footer",
   },
   loader: {
     message: "Preparing your escape",
@@ -48,6 +50,7 @@ export const en: Dictionary = {
     close: "Close gallery",
     previous: "Previous image",
     next: "Next image",
+    dialogLabel: "Photo gallery",
   },
   location: {
     eyebrow: "The Island of Evia",
@@ -56,6 +59,9 @@ export const en: Dictionary = {
       "Evia is Greece's second-largest island, offering dramatic mountain peaks, ancient forests, and pristine secret beaches—all while remaining connected to the mainland.",
     mapLabel: "Evia Island Map",
     openInMaps: "Open in maps",
+    mapAria: "Interactive map showing Green Villa on Evia island",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
     highlights: [
       {
         title: "Gialtron Beach",
@@ -178,6 +184,7 @@ export const en: Dictionary = {
     message: "Message / Special Requests",
     send: "Send Request",
     sending: "Sending…",
+    requiredNote: "Fields marked * are required.",
     placeholders: {
       firstName: "Constantinos",
       lastName: "Pappas",
@@ -207,6 +214,7 @@ export const en: Dictionary = {
     hosts: {
       label: "Your Hosts",
       names: "Eti & Zeevik",
+      photoAlt: "Eti and Zeevik, the hosts of Green Villa, smiling together",
       quote:
         '"We\'ve been welcoming guests to our beloved family villa on Evia island since 2015."',
     },

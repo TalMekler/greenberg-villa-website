@@ -15,7 +15,7 @@ export function RequestSent({
   onReset: () => void;
 }) {
   const { t, meta } = useLanguage();
-  const headingRef = useRef<HTMLParagraphElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const nights = nightsBetween(fromDateKey(request.checkIn), fromDateKey(request.checkOut));
 
   // Move focus to the confirmation so it is announced and reachable by keyboard.
@@ -45,13 +45,14 @@ export function RequestSent({
       </span>
 
       <div className="flex flex-col gap-3">
-        <p
+        {/* A heading under the section's h2, so it can be found by heading navigation. */}
+        <h3
           ref={headingRef}
           tabIndex={-1}
           className="font-serif text-[28px] text-white outline-none"
         >
           {t.contact.sent.title}
-        </p>
+        </h3>
         <p className="font-sans text-[15px] leading-[1.6] text-cream">
           {t.contact.sent.body.replace("{name}", request.firstName)}
         </p>
@@ -59,9 +60,10 @@ export function RequestSent({
 
       <dl className="flex w-full flex-col gap-3 border-t border-cream/20 pt-6 font-sans text-[14px]">
         <div className="flex flex-wrap justify-between gap-2">
-          <dt className="text-cream/70">{t.contact.sent.dates}</dt>
+          <dt className="text-cream/80">{t.contact.sent.dates}</dt>
           <dd className="text-end text-white">
-            {formatLongDate(fromDateKey(request.checkIn), meta.locale)} →{" "}
+            {/* A dash rather than an arrow: an arrow points the wrong way in Hebrew. */}
+            {formatLongDate(fromDateKey(request.checkIn), meta.locale)} –{" "}
             {formatLongDate(fromDateKey(request.checkOut), meta.locale)}
             <span className="block text-[12px] text-cream/70">
               {nights} {nights === 1 ? t.units.night : t.units.nights}
@@ -69,12 +71,14 @@ export function RequestSent({
           </dd>
         </div>
         <div className="flex flex-wrap justify-between gap-2">
-          <dt className="text-cream/70">{t.contact.sent.guests}</dt>
+          <dt className="text-cream/80">{t.contact.sent.guests}</dt>
           <dd className="text-white">{request.guests}</dd>
         </div>
         <div className="flex flex-wrap justify-between gap-2">
-          <dt className="text-cream/70">{t.contact.sent.replyTo}</dt>
-          <dd className="break-all text-white">{request.email}</dd>
+          <dt className="text-cream/80">{t.contact.sent.replyTo}</dt>
+          <dd dir="ltr" className="break-all text-white rtl:text-end">
+            {request.email}
+          </dd>
         </div>
       </dl>
 

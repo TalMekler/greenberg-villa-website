@@ -60,7 +60,7 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
         </h3>
 
         {loadError ? (
-          <p role="alert" className="mt-3 font-sans text-[13px] text-terracotta">
+          <p role="alert" className="mt-3 font-sans text-[13px] text-terracotta-deep">
             {loadError}
           </p>
         ) : (
@@ -96,13 +96,15 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
             </label>
             <input
               id={`${formId}-email`}
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? `${formId}-email-error` : undefined}
               type="email"
               autoComplete="off"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className={adminFieldClass}
             />
-            <FieldError message={errors.email} />
+            <FieldError id={`${formId}-email-error`} message={errors.email} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -111,18 +113,19 @@ export function UsersPanel({ currentUserId }: { currentUserId: string }) {
             </label>
             <input
               id={`${formId}-password`}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? `${formId}-hint ${formId}-password-error` : `${formId}-hint`}
               type="text"
               autoComplete="off"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              aria-describedby={`${formId}-hint`}
               className={adminFieldClass}
             />
             <p id={`${formId}-hint`} className="font-sans text-[12px] text-slate">
               At least 8 characters, including a letter and a number. Shown in the clear so you can
               pass it on.
             </p>
-            <FieldError message={errors.password} />
+            <FieldError id={`${formId}-password-error`} message={errors.password} />
           </div>
 
           {created ? (

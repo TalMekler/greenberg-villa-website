@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { SiteImage } from "../../lib/site-images";
-import { useLanguage } from "../../i18n";
+import { localizeAlt, useLanguage } from "../../i18n";
 import { Lightbox } from "../ui/Lightbox";
 import { SectionHeading } from "../ui/SectionHeading";
 
@@ -50,9 +50,13 @@ function buildRows(images: SiteImage[]): Row[] {
 }
 
 export function Gallery({ images }: { images: SiteImage[] }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const rows = buildRows(images);
+  // An upload the admin left undescribed still gets a name, never an empty alt.
+  const alts = images.map((image, index) =>
+    localizeAlt(image.alt, language, `${t.gallery.title} ${index + 1} / ${images.length}`),
+  );
 
   return (
     <section id="gallery" className="bg-cream px-5 py-20 sm:px-8 lg:px-20 lg:py-[120px]">
@@ -71,17 +75,21 @@ export function Gallery({ images }: { images: SiteImage[] }) {
             >
               {row.images.map((image, position) => {
                 const index = row.offset + position;
+                const alt = alts[index];
+                // Named by its contents rather than aria-label, so the photo's
+                // description keeps its own `lang` when it is still in English.
                 return (
                   <button
                     key={image.id}
                     type="button"
                     onClick={() => setOpenIndex(index)}
-                    aria-label={`${t.gallery.open}: ${image.alt}`}
                     className="reveal group h-[240px] overflow-hidden rounded-lg sm:h-[280px] lg:h-full"
                   >
+                    <span className="sr-only">{t.gallery.open}: </span>
                     <img
                       src={image.url}
-                      alt={image.alt}
+                      alt={alt.alt}
+                      lang={alt.lang}
                       loading="lazy"
                       className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
@@ -94,7 +102,7 @@ export function Gallery({ images }: { images: SiteImage[] }) {
       </div>
 
       <Lightbox
-        images={images.map((image) => ({ src: image.url, alt: image.alt }))}
+        images={images.map((image, index) => ({ src: image.url, ...alts[index] }))}
         index={openIndex}
         onClose={() => setOpenIndex(null)}
         onNavigate={setOpenIndex}

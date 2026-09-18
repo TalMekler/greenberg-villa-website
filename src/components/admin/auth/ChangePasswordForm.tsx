@@ -61,13 +61,15 @@ export function ChangePasswordForm({ variant, onChanged }: ChangePasswordFormPro
         </label>
         <input
           id={`${formId}-current`}
+          aria-invalid={Boolean(errors.currentPassword)}
+          aria-describedby={errors.currentPassword ? `${formId}-current-error` : undefined}
           type="password"
           autoComplete="current-password"
           value={currentPassword}
           onChange={(event) => setCurrentPassword(event.target.value)}
           className={adminFieldClass}
         />
-        <FieldError message={errors.currentPassword} />
+        <FieldError id={`${formId}-current-error`} message={errors.currentPassword} />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -76,17 +78,18 @@ export function ChangePasswordForm({ variant, onChanged }: ChangePasswordFormPro
         </label>
         <input
           id={`${formId}-new`}
+          aria-invalid={Boolean(errors.newPassword)}
+          aria-describedby={errors.newPassword ? `${formId}-hint ${formId}-new-error` : `${formId}-hint`}
           type="password"
           autoComplete="new-password"
           value={newPassword}
           onChange={(event) => setNewPassword(event.target.value)}
-          aria-describedby={`${formId}-hint`}
           className={adminFieldClass}
         />
         <p id={`${formId}-hint`} className="font-sans text-[12px] text-slate">
           At least 8 characters, including a letter and a number.
         </p>
-        <FieldError message={errors.newPassword} />
+        <FieldError id={`${formId}-new-error`} message={errors.newPassword} />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -95,17 +98,19 @@ export function ChangePasswordForm({ variant, onChanged }: ChangePasswordFormPro
         </label>
         <input
           id={`${formId}-confirm`}
+          aria-invalid={Boolean(errors.confirmPassword)}
+          aria-describedby={errors.confirmPassword ? `${formId}-confirm-error` : undefined}
           type="password"
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
           className={adminFieldClass}
         />
-        <FieldError message={errors.confirmPassword} />
+        <FieldError id={`${formId}-confirm-error`} message={errors.confirmPassword} />
       </div>
 
       {message ? (
-        <p role="alert" className="font-sans text-[13px] text-terracotta">
+        <p role="alert" className="font-sans text-[13px] text-terracotta-deep">
           {message}
         </p>
       ) : null}

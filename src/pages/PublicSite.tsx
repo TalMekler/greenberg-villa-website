@@ -87,24 +87,39 @@ export default function PublicSite() {
   return (
     <>
       <Loader done={ready} />
-      <a
-        href="#about"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-sans focus:text-navy"
-      >
-        {t.nav.skipToContent}
-      </a>
-      <Navbar />
-      <main>
-        <Hero image={images?.hero ?? null} />
-        {images ? <About image={images.lifestyle} /> : null}
-        {images ? <Gallery images={images.gallery} /> : null}
-        <Location location={location} />
-        {images ? <Explore images={images.explore} /> : null}
-        <Availability stay={stay} onStayChange={setStay} availability={availability} />
-        <Transit />
-        <Contact stay={stay} />
-      </main>
-      <Footer />
+      {/*
+        Everything under the cover is inert until it lifts: otherwise a keyboard
+        user tabs through links they cannot see, and a screen reader reads a
+        page the loader says is still busy. `contents` keeps the wrapper out of
+        the layout.
+      */}
+      <div inert={!ready} className="contents">
+        {/*
+          First in the tab order. It lands on <main> itself — which starts with
+          the hero and the page's only h1 — rather than on a section further
+          down, and sits above the navbar (z-40) so it is seen when focused.
+          `start-4` keeps it in the reading corner in Hebrew too.
+        */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:start-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-sans focus:font-semibold focus:text-navy"
+        >
+          {t.nav.skipToContent}
+        </a>
+        <Navbar />
+        {/* tabIndex -1 so the skip link moves keyboard focus here, not just the scroll. */}
+        <main id="main" tabIndex={-1}>
+          <Hero image={images?.hero ?? null} />
+          {images ? <About image={images.lifestyle} /> : null}
+          {images ? <Gallery images={images.gallery} /> : null}
+          <Location location={location} />
+          {images ? <Explore images={images.explore} /> : null}
+          <Availability stay={stay} onStayChange={setStay} availability={availability} />
+          <Transit />
+          <Contact stay={stay} />
+        </main>
+        <Footer />
+      </div>
     </>
   );
 }

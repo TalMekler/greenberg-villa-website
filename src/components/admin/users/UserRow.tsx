@@ -51,7 +51,7 @@ export function UserRow({
           </span>
         ) : null}
         {user.mustChangePassword ? (
-          <span className="rounded-full bg-terracotta/15 px-3 py-1 font-sans text-[11px] font-bold tracking-[0.06em] text-terracotta uppercase">
+          <span className="rounded-full bg-terracotta/15 px-3 py-1 font-sans text-[11px] font-bold tracking-[0.06em] text-terracotta-deep uppercase">
             Initial password
           </span>
         ) : null}
@@ -76,7 +76,7 @@ export function UserRow({
                 setError(null);
                 setMode(mode === "confirming-delete" ? "idle" : "confirming-delete");
               }}
-              className={`${smallButton} border border-terracotta text-terracotta not-disabled:hover:bg-terracotta not-disabled:hover:text-white`}
+              className={`${smallButton} border border-terracotta-deep text-terracotta-deep not-disabled:hover:bg-terracotta-deep not-disabled:hover:text-white`}
             >
               Delete
             </button>
@@ -96,7 +96,7 @@ export function UserRow({
               autoComplete="off"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="min-w-[200px] flex-1 rounded-[4px] border border-line bg-white px-3 py-2 font-sans text-[14px] text-ink focus:border-navy focus:outline-none"
+              className="min-w-[200px] flex-1 rounded-[4px] border border-field bg-white px-3 py-2 font-sans text-[14px] text-ink focus:border-navy"
             />
             <button
               type="button"
@@ -131,7 +131,7 @@ export function UserRow({
             type="button"
             disabled={busy}
             onClick={() => void run(() => deleteUser(user.id))}
-            className={`${smallButton} bg-terracotta text-white not-disabled:hover:bg-[#b96b4f]`}
+            className={`${smallButton} bg-terracotta-deep text-white not-disabled:hover:bg-[#b96b4f]`}
           >
             {busy ? "Deleting…" : "Yes, delete"}
           </button>
@@ -147,7 +147,7 @@ export function UserRow({
       ) : null}
 
       {error ? (
-        <p role="alert" className="font-sans text-[12px] text-terracotta">
+        <p role="alert" className="font-sans text-[12px] text-terracotta-deep">
           {error}
         </p>
       ) : null}

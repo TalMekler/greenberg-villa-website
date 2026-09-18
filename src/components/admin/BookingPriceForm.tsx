@@ -17,7 +17,7 @@ interface BookingPriceFormProps {
 }
 
 const control =
-  "rounded-[4px] border border-line bg-white px-3 py-2 font-sans text-[14px] text-ink focus:border-navy focus:outline-none";
+  "rounded-[4px] border border-field bg-white px-3 py-2 font-sans text-[14px] text-ink focus:border-navy";
 
 const smallButton =
   "rounded-[4px] px-3 py-2 font-sans text-[11px] font-bold tracking-[0.04em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-40";
@@ -156,7 +156,7 @@ export function BookingPriceForm({ booking, nights, onSaved }: BookingPriceFormP
       )}
 
       {error ? (
-        <p role="alert" className="font-sans text-[12px] text-terracotta">
+        <p role="alert" className="font-sans text-[12px] text-terracotta-deep">
           {error}
         </p>
       ) : null}

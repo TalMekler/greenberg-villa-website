@@ -4,7 +4,7 @@ const statusStyles: Record<InquiryStatus, string> = {
   pending: "bg-cream text-navy",
   approved: "bg-navy text-white",
   declined: "bg-line text-slate",
-  cancelled: "bg-terracotta/15 text-terracotta",
+  cancelled: "bg-terracotta/15 text-terracotta-deep",
 };
 
 export function StatusPill({ status }: { status: InquiryStatus }) {

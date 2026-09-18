@@ -8,7 +8,7 @@ interface LoginFormProps {
 }
 
 const fieldClass =
-  "w-full rounded-[4px] border border-line bg-white px-4 py-3 font-sans text-[15px] text-ink transition-colors focus:border-navy focus:outline-none";
+  "w-full rounded-[4px] border border-field bg-white px-4 py-3 font-sans text-[15px] text-ink transition-colors focus:border-navy";
 
 export function LoginForm({ configured, onSignedIn }: LoginFormProps) {
   const formId = useId();
@@ -35,12 +35,14 @@ export function LoginForm({ configured, onSignedIn }: LoginFormProps) {
   };
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-navy px-5 py-16">
+    <main className="flex min-h-dvh items-center justify-center bg-navy px-5 py-16">
       <div className="w-full max-w-[420px] rounded-xl bg-white p-8 shadow-panel">
-        <p className="font-serif text-[26px] text-navy">Green Villa</p>
-        <p className="mt-1 font-sans text-[12px] font-bold tracking-[0.08em] text-slate uppercase">
-          Booking admin
-        </p>
+        <h1 className="font-serif text-[26px] text-navy">
+          Green Villa
+          <span className="mt-1 block font-sans text-[12px] font-bold tracking-[0.08em] text-slate uppercase">
+            Booking admin
+          </span>
+        </h1>
 
         {configured ? (
           <form
@@ -86,7 +88,7 @@ export function LoginForm({ configured, onSignedIn }: LoginFormProps) {
             </div>
 
             {error ? (
-              <p role="alert" className="font-sans text-[13px] text-terracotta">
+              <p role="alert" className="font-sans text-[13px] text-terracotta-deep">
                 {error}
               </p>
             ) : null}
@@ -110,6 +112,6 @@ export function LoginForm({ configured, onSignedIn }: LoginFormProps) {
           </p>
         )}
       </div>
-    </div>
+    </main>
   );
 }

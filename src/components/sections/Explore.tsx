@@ -1,10 +1,10 @@
 import { exploreSlugOrder } from "../../data/site";
-import { useLanguage } from "../../i18n";
+import { localizeAlt, useLanguage } from "../../i18n";
 import type { ExploreSlug, SiteImage } from "../../lib/site-images";
 import { SectionHeading } from "../ui/SectionHeading";
 
 export function Explore({ images }: { images: Record<ExploreSlug, SiteImage> }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   return (
     <section id="explore" className="bg-cream px-5 py-20 sm:px-8 lg:px-20 lg:py-[120px]">
@@ -19,6 +19,7 @@ export function Explore({ images }: { images: Record<ExploreSlug, SiteImage> }) 
           {t.explore.cards.map((card, index) => {
             const slug = exploreSlugOrder[index];
             const photo = images[slug];
+            const alt = localizeAlt(photo.alt, language, card.title);
             return (
             <li
               key={slug}
@@ -27,7 +28,8 @@ export function Explore({ images }: { images: Record<ExploreSlug, SiteImage> }) 
               <div className="h-[240px] overflow-hidden">
                 <img
                   src={photo.url}
-                  alt={photo.alt}
+                  alt={alt.alt}
+                  lang={alt.lang}
                   loading="lazy"
                   className="size-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                 />

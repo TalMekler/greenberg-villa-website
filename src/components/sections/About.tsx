@@ -1,11 +1,12 @@
 import { statIcons } from "../../data/site";
-import { useLanguage } from "../../i18n";
+import { localizeAlt, useLanguage } from "../../i18n";
 import type { SiteImage } from "../../lib/site-images";
 import { Button } from "../ui/Button";
 import { Icon } from "../ui/Icon";
 
 export function About({ image }: { image: SiteImage }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const alt = localizeAlt(image.alt, language);
 
   return (
     <section id="about" className="bg-shell px-5 py-20 sm:px-8 lg:px-20 lg:py-[120px]">
@@ -27,7 +28,7 @@ export function About({ image }: { image: SiteImage }) {
         <div className="flex flex-col items-center gap-10 lg:flex-row lg:gap-8">
           <div className="reveal flex w-full flex-col gap-8 lg:w-1/2">
             <div className="flex flex-col gap-4">
-              <p className="font-sans text-[14px] font-bold tracking-[0.08em] text-terracotta uppercase">
+              <p className="font-sans text-[14px] font-bold tracking-[0.08em] text-terracotta-deep uppercase">
                 {t.about.eyebrow}
               </p>
               <h2 className="font-serif text-[32px] leading-[1.2] text-navy sm:text-[40px] lg:text-[48px]">
@@ -54,7 +55,8 @@ export function About({ image }: { image: SiteImage }) {
           <div className="reveal w-full lg:w-1/2">
             <img
               src={image.url}
-              alt={image.alt}
+              alt={alt.alt}
+              lang={alt.lang}
               className="h-[320px] w-full rounded-lg object-cover sm:h-[440px] lg:h-[560px]"
             />
           </div>

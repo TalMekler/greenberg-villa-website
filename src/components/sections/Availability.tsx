@@ -103,7 +103,7 @@ export function Availability({ stay, onStayChange, availability }: AvailabilityP
               aria-label={t.availability.previousMonth}
               className="flex size-10 items-center justify-center rounded-full bg-sand transition-colors not-disabled:hover:bg-cream disabled:cursor-not-allowed disabled:opacity-35"
             >
-              <Icon name="chevronLeft" size={16} />
+              <Icon name="chevronLeft" size={16} className="rtl:-scale-x-100" />
             </button>
             <h3 className="font-serif text-[24px] text-navy sm:text-[28px]" aria-live="polite">
               {formatMonth(month, meta.locale)}
@@ -114,7 +114,7 @@ export function Availability({ stay, onStayChange, availability }: AvailabilityP
               aria-label={t.availability.nextMonth}
               className="flex size-10 items-center justify-center rounded-full bg-sand transition-colors hover:bg-cream"
             >
-              <Icon name="chevronRight" size={16} />
+              <Icon name="chevronRight" size={16} className="rtl:-scale-x-100" />
             </button>
           </div>
 
@@ -138,26 +138,32 @@ export function Availability({ stay, onStayChange, availability }: AvailabilityP
               const state = dayState(date);
               const label = formatLongDate(date, meta.locale);
 
+              // Days that cannot be picked are plain text, not disabled buttons,
+              // so they stay out of the tab order. aria-label is not announced on
+              // an element with no role, so the full date is spoken from sr-only
+              // text instead, with the visible number hidden from the reader.
               if (state === "past") {
                 return (
                   <div
                     key={toDateKey(date)}
-                    aria-label={`${label} — ${t.availability.dayPast}`}
-                    className={`${cellBase} cursor-not-allowed bg-sand/60 text-slate/35`}
+                    className={`${cellBase} cursor-not-allowed text-slate/85`}
                   >
-                    {date.getDate()}
+                    <span aria-hidden="true">{date.getDate()}</span>
+                    <span className="sr-only">{`${label} — ${t.availability.dayPast}`}</span>
                   </div>
                 );
               }
 
               if (state === "booked") {
+                // Struck through as well as coloured: colour alone must not be
+                // the only thing telling a booked night from a free one.
                 return (
                   <div
                     key={toDateKey(date)}
-                    aria-label={`${label} — ${t.availability.dayBooked}`}
-                    className={`${cellBase} cursor-not-allowed bg-terracotta font-semibold text-white`}
+                    className={`${cellBase} cursor-not-allowed bg-terracotta-deep font-semibold text-white line-through decoration-2`}
                   >
-                    {date.getDate()}
+                    <span aria-hidden="true">{date.getDate()}</span>
+                    <span className="sr-only">{`${label} — ${t.availability.dayBooked}`}</span>
                   </div>
                 );
               }
@@ -186,11 +192,16 @@ export function Availability({ stay, onStayChange, availability }: AvailabilityP
           <div className="mt-8 flex flex-col gap-5 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-6">
               <span className="flex items-center gap-2">
-                <span className="size-4 rounded-[4px] border border-line bg-sand" />
+                <span aria-hidden="true" className="size-4 rounded-[4px] border border-slate/50 bg-sand" />
                 <span className="font-sans text-[13px] text-slate">{t.availability.available}</span>
               </span>
               <span className="flex items-center gap-2">
-                <span className="size-4 rounded-[4px] bg-terracotta" />
+                <span
+                  aria-hidden="true"
+                  className="flex size-4 items-center justify-center rounded-[4px] bg-terracotta-deep"
+                >
+                  <span className="block h-0.5 w-2.5 bg-white" />
+                </span>
                 <span className="font-sans text-[13px] text-slate">{t.availability.booked}</span>
               </span>
             </div>
@@ -202,7 +213,7 @@ export function Availability({ stay, onStayChange, availability }: AvailabilityP
                   : loading
                     ? t.availability.loading
                     : stay?.end
-                      ? `${formatLongDate(stay.start, meta.locale)} → ${formatLongDate(stay.end, meta.locale)} · ${nights} ${
+                      ? `${formatLongDate(stay.start, meta.locale)} – ${formatLongDate(stay.end, meta.locale)} · ${nights} ${
                           nights === 1 ? t.units.night : t.units.nights
                         }`
                       : stay

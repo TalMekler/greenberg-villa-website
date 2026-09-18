@@ -69,6 +69,10 @@ export function Contact({ stay }: ContactProps) {
   const [values, setValues] = useState<FormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
   const [confirmation, setConfirmation] = useState<FormValues | null>(null);
+  // The form unmounts while the confirmation shows, and the scroll-reveal observer
+  // only sees elements present on first render — so a form that comes back after
+  // a send has to arrive already visible.
+  const [hasSent, setHasSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -109,6 +113,7 @@ export function Contact({ stay }: ContactProps) {
     try {
       await createInquiry(values, language);
       setConfirmation(values);
+      setHasSent(true);
       setValues({ ...emptyValues, guests: values.guests });
     } catch (caught) {
       setConfirmation(null);
@@ -147,7 +152,7 @@ export function Contact({ stay }: ContactProps) {
           <form
             noValidate
             onSubmit={(event) => void handleSubmit(event)}
-            className="reveal flex w-full flex-col gap-6 lg:w-[55%]"
+            className={`reveal flex w-full flex-col gap-6 lg:w-[55%] ${hasSent ? "is-visible" : ""}`}
           >
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="flex flex-col gap-2">

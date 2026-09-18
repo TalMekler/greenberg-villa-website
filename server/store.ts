@@ -21,6 +21,8 @@ interface Row {
   priceAmount: string | null;
   priceCurrency: string | null;
   priceMode: string | null;
+  privacyPolicyVersion: string | null;
+  privacyAcceptedAt: string | null;
 }
 
 function toInquiry(row: Row): Inquiry {
@@ -46,6 +48,9 @@ function toInquiry(row: Row): Inquiry {
       mode: row.priceMode,
     } as BookingPrice;
   }
+  if (row.privacyPolicyVersion && row.privacyAcceptedAt) {
+    inquiry.privacy = { version: row.privacyPolicyVersion, acceptedAt: row.privacyAcceptedAt };
+  }
   return inquiry;
 }
 
@@ -54,18 +59,28 @@ export async function listInquiries(): Promise<Inquiry[]> {
   return rows.map(toInquiry);
 }
 
-export async function createInquiry(input: InquiryInput): Promise<Inquiry> {
+/**
+ * Stores a booking request with the guest's agreement to the Privacy Policy:
+ * the version the form showed, timestamped here rather than by the browser.
+ */
+export async function createInquiry(
+  input: InquiryInput,
+  privacyPolicyVersion: string,
+): Promise<Inquiry> {
+  const submittedAt = new Date().toISOString();
   const inquiry: Inquiry = {
     ...input,
     id: crypto.randomUUID(),
     status: "pending",
-    submittedAt: new Date().toISOString(),
+    submittedAt,
+    privacy: { version: privacyPolicyVersion, acceptedAt: submittedAt },
   };
 
   await query(
     `INSERT INTO inquiries (id, "firstName", "lastName", email, "checkIn", "checkOut",
-                            guests, message, status, "submittedAt")
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                            guests, message, status, "submittedAt",
+                            "privacyPolicyVersion", "privacyAcceptedAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
     [
       inquiry.id,
       inquiry.firstName,
@@ -77,6 +92,8 @@ export async function createInquiry(input: InquiryInput): Promise<Inquiry> {
       inquiry.message ?? "",
       inquiry.status,
       inquiry.submittedAt,
+      privacyPolicyVersion,
+      submittedAt,
     ],
   );
   return inquiry;

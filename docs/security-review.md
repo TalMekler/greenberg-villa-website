@@ -261,8 +261,8 @@ error.
 **M1 site CSP:**
 
 - `script-src 'self'` plus the SHA-256 of the inline language script.
-- Styles: `'self' 'unsafe-inline'` (Leaflet and React style attributes) plus
-  Google Fonts.
+- Styles: `'self' 'unsafe-inline'` (Leaflet and React style attributes).
+  Fonts: `'self'` only — they are self-hosted, not loaded from Google.
 - Images: `'self' data: blob:`, the Supabase project and OSM tiles.
 - `connect-src`: `'self'` and the Supabase project over `https`/`wss`.
 - `frame-ancestors 'none'`, `object-src 'none'`, `base-uri 'self'`,

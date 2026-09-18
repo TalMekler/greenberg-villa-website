@@ -118,10 +118,8 @@ async function answer(request: HTTPRequest): Promise<void> {
 
   if (url.hostname.endsWith("tile.openstreetmap.org")) return request.abort();
   if (url.origin !== "http://localhost:5199") {
-    // Fonts may load; nothing else leaves the machine.
-    return url.hostname.endsWith("googleapis.com") || url.hostname.endsWith("gstatic.com")
-      ? request.continue()
-      : request.abort();
+    // Fonts are self-hosted, so nothing leaves the machine.
+    return request.abort();
   }
   if (!url.pathname.startsWith("/api/")) return request.continue();
 
@@ -371,6 +369,22 @@ async function publicSite(page: Page, language: Language) {
     "Submitting with errors announces a summary and focuses the first invalid field", [JSON.stringify(form)]);
   await runAxe(page, `${scenario}/form-errors`);
 
+  // Privacy consent: read before the button, and announced with it.
+  const consent = await page.evaluate(() => {
+    const button = document.querySelector("#contact form button[type=submit]")!;
+    const notice = document.getElementById(button.getAttribute("aria-describedby") ?? "");
+    const link = notice?.querySelector("a");
+    return {
+      before: Boolean(notice && notice.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING),
+      href: link?.getAttribute("href") ?? "",
+      newTab: link?.target === "_blank" && Boolean(link.querySelector(".sr-only")?.textContent?.trim()),
+    };
+  });
+  check(scenario, "form-privacy-consent",
+    consent.before && consent.href === `/${language}/privacy` && consent.newTab,
+    "The privacy notice precedes the submit button, describes it, and links to this language's policy (new tab announced)",
+    [JSON.stringify(consent)]);
+
   // 200% zoom: a 1280px window at 200% lays out at 640 CSS px.
   for (const [width, height, label] of [
     [640, 400, "200%"],
@@ -435,6 +449,111 @@ async function reducedMotion(page: Page) {
   await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
 }
 
+const legalPages = ["privacy", "terms", "accessibility"] as const;
+
+/**
+ * A legal page, opened with a *different* stored language, so the check that
+ * the URL wins is a real one.
+ */
+async function legalPage(page: Page, language: Language, doc: (typeof legalPages)[number]) {
+  const scenario = `legal/${language}/${doc}`;
+  const stored = language === "en" ? "he" : "en";
+  await page.setViewport({ width: 1280, height: 800 });
+  await page.evaluateOnNewDocument((lang) => {
+    localStorage.setItem("greenberg-villa:language", lang);
+  }, stored);
+  await page.goto(`http://localhost:5199/${language}/${doc}`, { waitUntil: "networkidle0" });
+  await page.waitForSelector("main h1");
+
+  const state = await page.evaluate(() => ({
+    lang: document.documentElement.lang,
+    dir: document.documentElement.dir,
+    title: document.title,
+    headings: [...document.querySelectorAll("h1,h2,h3,h4,h5,h6")].map((h) => Number(h.tagName[1])),
+  }));
+  check(scenario, "html-lang-dir", state.lang === language && state.dir === (language === "he" ? "rtl" : "ltr"),
+    `The URL's language wins over the stored one: <html lang="${state.lang}" dir="${state.dir}">`);
+  const skips = state.headings.filter((level, i) => i > 0 && level > state.headings[i - 1] + 1);
+  check(scenario, "single-h1", state.headings.filter((l) => l === 1).length === 1, "Exactly one h1", [String(state.headings)]);
+  check(scenario, "heading-order", state.headings[0] === 1 && skips.length === 0,
+    "Headings start at h1 and never skip a level", [state.headings.join(" ")]);
+  check(scenario, "document-title", state.title.includes("Green Villa") && !state.title.startsWith("Green Villa —"),
+    "The document title names the page", [state.title]);
+
+  await runAxe(page, scenario);
+
+  // Skip link, then every Tab stop shows a ring.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Tab");
+  const first = await page.evaluate(() => document.activeElement?.getAttribute("href"));
+  check(scenario, "skip-link-first", first === "#main", "First Tab stop is the skip link");
+  await page.keyboard.press("Enter");
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  check(scenario, "skip-link-target", await page.evaluate(() => document.activeElement?.id === "main"),
+    "Skip link moves focus to <main>");
+
+  const noRing: string[] = [];
+  let reachedCookieButton = false;
+  for (let i = 0; i < 80; i++) {
+    await page.keyboard.press("Tab");
+    const stop = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement;
+      const style = getComputedStyle(el);
+      return {
+        body: el === document.body,
+        id: el.id,
+        key: `${el.tagName.toLowerCase()}:${(el.textContent ?? "").trim().slice(0, 30)}`,
+        ring: style.outlineStyle !== "none" && parseFloat(style.outlineWidth) >= 1,
+      };
+    });
+    if (stop.body) break;
+    if (!stop.ring) noRing.push(stop.key);
+    if (stop.id === "cookie-settings") {
+      reachedCookieButton = true;
+      break;
+    }
+  }
+  check(scenario, "focus-visible", noRing.length === 0, "Every Tab stop shows a focus outline", noRing);
+  check(scenario, "tab-reaches-cookie-settings", reachedCookieButton,
+    "Tabbing reaches the footer's Cookie settings button");
+
+  // Reflow at 400% (320 CSS px).
+  await page.setViewport({ width: 320, height: 640 });
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  check(scenario, "reflow-320px", overflow <= 0, "No horizontal scrolling at 320px", [`${overflow}px over`]);
+  await page.setViewport({ width: 1280, height: 800 });
+
+  // Switching language goes to the same page in the other language, and keeps focus on the button.
+  if (doc === "privacy") {
+    const other = language === "el" ? "en" : "el";
+    await page.focus(`header button[lang="${other}"]`);
+    await page.keyboard.press("Enter");
+    await page.waitForFunction((lang) => document.documentElement.lang === lang, {}, other);
+    const after = await page.evaluate(() => ({
+      path: location.pathname,
+      focus: document.activeElement?.getAttribute("lang"),
+      pressed: document.activeElement?.getAttribute("aria-pressed"),
+    }));
+    check(scenario, "language-switch", after.path === `/${other}/${doc}` && after.focus === other && after.pressed === "true",
+      "The language picker opens the same page in the other language, with focus kept on the button", [JSON.stringify(after)]);
+    await page.goto(`http://localhost:5199/${language}/${doc}`, { waitUntil: "networkidle0" });
+  }
+
+  // Cookie settings (a placeholder for now): leads to the cookies section and focuses its heading.
+  if (doc === "terms") {
+    await page.click("#cookie-settings");
+    await page.waitForFunction(() => location.hash === "#cookies");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const landed = await page.evaluate(() => ({
+      path: location.pathname,
+      focus: document.activeElement?.id,
+    }));
+    check(scenario, "cookie-settings", landed.path === `/${language}/privacy` && landed.focus === "cookies-heading",
+      "Cookie settings leads to the cookies section, with focus on its heading", [JSON.stringify(landed)]);
+  }
+}
+
 async function adminPages(page: Page) {
   await page.setViewport({ width: 1280, height: 800 });
 
@@ -492,6 +611,12 @@ try {
       `public/${language}`,
       () => publicSite(page, language),
     ]),
+    ...languages.flatMap((language) =>
+      legalPages.map((doc): [string, () => Promise<void>] => [
+        `legal/${language}/${doc}`,
+        () => legalPage(page, language, doc),
+      ]),
+    ),
     ["public/en/reduced-motion", () => reducedMotion(page)],
     ["admin", () => adminPages(page)],
   ];

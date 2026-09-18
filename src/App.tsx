@@ -1,7 +1,16 @@
 import { useEffect } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { useLanguage } from "./i18n";
+import { legalPages, legalPath, type LegalPage as Page } from "./legal";
 import Admin from "./pages/Admin";
+import LegalPage from "./pages/LegalPage";
 import PublicSite from "./pages/PublicSite";
+
+/** /privacy with no language opens it in the visitor's own. */
+function ToLegalPage({ page }: { page: Page }) {
+  const { language } = useLanguage();
+  return <Navigate to={legalPath(language, page)} replace />;
+}
 
 export default function App() {
   /*
@@ -20,6 +29,13 @@ export default function App() {
     <Routes>
       <Route path="/" element={<PublicSite />} />
       <Route path="/admin" element={<Admin />} />
+      {/* Legal pages carry their language in the path: /en/privacy, /he/terms, /el/accessibility. */}
+      {legalPages.map((page) => (
+        <Route key={page} path={`/:lang/${page}`} element={<LegalPage page={page} />} />
+      ))}
+      {legalPages.map((page) => (
+        <Route key={`${page}-bare`} path={`/${page}`} element={<ToLegalPage page={page} />} />
+      ))}
       {/* Anything else falls back to the marketing site. */}
       <Route path="*" element={<PublicSite />} />
     </Routes>

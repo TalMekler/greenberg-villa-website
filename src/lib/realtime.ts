@@ -16,6 +16,13 @@ export type WatchedTable = "booked_dates" | "site_images" | "location" | "inquir
 
 let clientPromise: Promise<SupabaseClient | null> | null = null;
 
+/**
+ * Gives each subscription a topic of its own. Supabase hands back the existing
+ * channel when a topic repeats, so a second watcher under one name added its
+ * callbacks to a channel already subscribed — which throws.
+ */
+let channelCount = 0;
+
 async function getClient(): Promise<SupabaseClient | null> {
   clientPromise ??= (async () => {
     try {
@@ -50,17 +57,18 @@ export function watchTables(
   onChange: (table: WatchedTable) => void,
   onStatus?: (live: boolean) => void,
 ): () => void {
+  let client: SupabaseClient | null = null;
   let channel: RealtimeChannel | null = null;
   let cancelled = false;
 
   void (async () => {
-    const client = await getClient();
+    client = await getClient();
     if (!client || cancelled) {
       onStatus?.(false);
       return;
     }
 
-    channel = client.channel("site-changes");
+    channel = client.channel(`site-changes-${++channelCount}`);
     for (const table of tables) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
         onChange(table);
@@ -74,6 +82,7 @@ export function watchTables(
 
   return () => {
     cancelled = true;
-    if (channel) void channel.unsubscribe();
+    // Removed, not just unsubscribed, so remounts do not pile up channels.
+    if (client && channel) void client.removeChannel(channel);
   };
 }

@@ -90,6 +90,8 @@ and `npm run dev:api` if you prefer separate terminals.
 | `npm run build` | Type-checks the whole project, then bundles to `dist/` |
 | `npm run preview` | Serves the built bundle locally |
 | `npm run lint` | oxlint over the source |
+| `npm run a11y` | Accessibility audit (axe + keyboard, reflow, RTL) in Chrome, all three languages |
+| `npm run compliance` | After `build`: no tracking before cookie consent, and every footer link, in Chrome — see `docs/compliance-summary.md` |
 | `npm start` | Runs the API alone, without watch |
 
 ## Where the data lives

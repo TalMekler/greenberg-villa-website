@@ -13,6 +13,7 @@
     "build": "node scripts/check-csp.mjs && tsc -b && vite build && npm run build:api",
     "lint": "oxlint",
     "a11y": "tsx scripts/a11y-audit.ts",
+    "compliance": "tsx scripts/compliance-check.ts",
     "preview": "vite preview",
     "start": "tsx server/index.ts",
     "migrate:supabase": "tsx scripts/migrate-to-supabase.ts",

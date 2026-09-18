@@ -24,3 +24,6 @@ api/_server.mjs
 
 # Output of npm run a11y
 a11y-report.json
+
+# Output of npm run compliance
+compliance-report.json

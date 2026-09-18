@@ -1,30 +1,44 @@
+import type { Language } from "../src/i18n/types";
 import type { Inquiry } from "../src/lib/inquiry";
 import type { NotifyResult } from "../src/lib/notify";
 import { listUsers } from "./users";
 
 /*
-  Emails the hosts when a guest sends a booking inquiry, through Resend's HTTP
-  API — a plain fetch, so there is no SDK to bundle.
+  Booking-inquiry emails, sent through Resend's HTTP API — a plain fetch, so
+  there is no SDK to bundle. Two go out per inquiry:
 
-  Recipients are NOTIFY_EMAIL (comma-separated) or, when that is unset, every
-  admin account. Without RESEND_API_KEY this does nothing: the inquiry is still
-  saved and shows up in /admin, it just isn't announced.
+  - to the hosts: the inquiry details, with Reply-To set to the guest;
+  - to the guest: a confirmation in the language they used on the site, with
+    Reply-To set to the hosts.
 
-  It never throws. A mail provider being down must not turn a guest's
+  Hosts are NOTIFY_EMAIL (comma-separated) or, when that is unset, every admin
+  account. Without RESEND_API_KEY nothing is sent: the inquiry is still saved
+  and shows up in /admin, it just isn't announced.
+
+  Nothing here throws. A mail provider being down must not turn a guest's
   successful inquiry into an error page.
 */
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 // Resend's shared sender works without a verified domain, but then only
-// delivers to the address the Resend account was opened with.
+// delivers to the address the Resend account was opened with — so guest
+// confirmations need NOTIFY_FROM on a verified domain.
 const DEFAULT_FROM = "Villa inquiries <onboarding@resend.dev>";
 const TIMEOUT_MS = 8000;
+
+interface Email {
+  to: string[];
+  replyTo?: string[];
+  subject: string;
+  text: string;
+  html: string;
+}
 
 export function notificationsConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim());
 }
 
-async function recipients(): Promise<string[]> {
+async function hosts(): Promise<string[]> {
   const configured = (process.env.NOTIFY_EMAIL ?? "")
     .split(",")
     .map((address) => address.trim())
@@ -47,7 +61,54 @@ function nights(inquiry: Inquiry): number {
   return Math.max(Math.round(ms / 86_400_000), 0);
 }
 
-function render(inquiry: Inquiry): { subject: string; text: string; html: string } {
+/** Label/value rows as an HTML table; values are escaped, labels are ours. */
+function htmlTable(rows: [string, string][]): string {
+  return `<table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
+${rows
+  .map(
+    ([label, value]) =>
+      `<tr><th valign="top" style="text-align:start">${label}</th><td style="white-space:pre-wrap">${escapeHtml(value)}</td></tr>`,
+  )
+  .join("\n")}
+</table>`;
+}
+
+async function send(email: Email): Promise<NotifyResult> {
+  const from = process.env.NOTIFY_FROM?.trim() || DEFAULT_FROM;
+  // Trimmed: a key pasted into a dashboard easily picks up a trailing space or
+  // newline, which Resend then rejects as invalid.
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return { sent: false, to: email.to, from, error: "RESEND_API_KEY is not set." };
+  if (email.to.length === 0) return { sent: false, to: [], from, error: "No one to send to." };
+
+  try {
+    const response = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: email.to,
+        reply_to: email.replyTo?.length ? email.replyTo : undefined,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    if (response.ok) return { sent: true, to: email.to, from };
+
+    const body = (await response.json().catch(() => null)) as { message?: string } | null;
+    const reason = body?.message ?? response.statusText;
+    return { sent: false, to: email.to, from, error: `Resend ${response.status}: ${reason}` };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { sent: false, to: email.to, from, error: reason };
+  }
+}
+
+// ── To the hosts ─────────────────────────────────────────────────────────────
+
+function hostEmail(inquiry: Inquiry, to: string[]): Email {
   const name = `${inquiry.firstName} ${inquiry.lastName}`;
   const rows: [string, string][] = [
     ["Name", name],
@@ -56,75 +117,177 @@ function render(inquiry: Inquiry): { subject: string; text: string; html: string
     ["Guests", inquiry.guests],
     ["Message", inquiry.message || "—"],
   ];
+  const footer = "Reply to this email to answer the guest, or approve it in /admin.";
 
-  const text = [
-    "A new booking inquiry arrived.",
-    "",
-    ...rows.map(([label, value]) => `${label}: ${value}`),
-    "",
-    "Reply to this email to answer the guest, or approve it in /admin.",
-  ].join("\n");
+  return {
+    to,
+    replyTo: [inquiry.email],
+    subject: `New inquiry: ${name}, ${inquiry.checkIn} → ${inquiry.checkOut}`,
+    text: [
+      "A new booking inquiry arrived.",
+      "",
+      ...rows.map(([label, value]) => `${label}: ${value}`),
+      "",
+      footer,
+    ].join("\n"),
+    html: `<p>A new booking inquiry arrived.</p>
+${htmlTable(rows)}
+<p style="font-family:sans-serif;font-size:13px;color:#666">${footer}</p>`,
+  };
+}
 
-  const html = `<p>A new booking inquiry arrived.</p>
-<table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
-${rows
-  .map(
-    ([label, value]) =>
-      `<tr><th align="left" valign="top">${label}</th><td style="white-space:pre-wrap">${escapeHtml(value)}</td></tr>`,
-  )
+// ── To the guest ─────────────────────────────────────────────────────────────
+
+interface GuestCopy {
+  dir: "ltr" | "rtl";
+  subject: string;
+  greeting: (firstName: string) => string;
+  paragraphs: string[];
+  summary: string;
+  dates: string;
+  nights: string;
+  guests: string;
+  signOff: string;
+  hosts: string;
+  place: string;
+}
+
+const guestCopy: Record<Language, GuestCopy> = {
+  en: {
+    dir: "ltr",
+    subject: "We've received your booking request – Green Villa",
+    greeting: (firstName) => `Hi ${firstName},`,
+    paragraphs: [
+      "Thank you for your booking request at Green Villa. We've received it and will be in touch soon to confirm the details and finalise your booking.",
+      "If you have any questions in the meantime, just reply to this email.",
+    ],
+    summary: "Your request",
+    dates: "Dates",
+    nights: "nights",
+    guests: "Guests",
+    signOff: "Warm regards,",
+    hosts: "Eti & Zeevik",
+    place: "Green Villa, Evia",
+  },
+  he: {
+    dir: "rtl",
+    subject: "קיבלנו את בקשת ההזמנה שלך – גרין וילה",
+    greeting: (firstName) => `שלום ${firstName},`,
+    paragraphs: [
+      "תודה על בקשת ההזמנה בגרין וילה. קיבלנו אותה וניצור איתך קשר בקרוב כדי לאשר את הפרטים ולסגור את ההזמנה.",
+      "אם יש לך שאלות בינתיים, אפשר פשוט להשיב למייל הזה.",
+    ],
+    summary: "פרטי הבקשה",
+    dates: "תאריכים",
+    nights: "לילות",
+    guests: "אורחים",
+    signOff: "בברכה חמה,",
+    hosts: "אתי וזאביק",
+    place: "גרין וילה, אוויה",
+  },
+  el: {
+    dir: "ltr",
+    subject: "Λάβαμε το αίτημα κράτησής σας – Green Villa",
+    greeting: (firstName) => `Γεια σας ${firstName},`,
+    paragraphs: [
+      "Σας ευχαριστούμε για το αίτημα κράτησης στη Green Villa. Το λάβαμε και θα επικοινωνήσουμε μαζί σας σύντομα για να επιβεβαιώσουμε τις λεπτομέρειες και να ολοκληρώσουμε την κράτησή σας.",
+      "Αν έχετε οποιαδήποτε ερώτηση στο μεταξύ, απλώς απαντήστε σε αυτό το email.",
+    ],
+    summary: "Το αίτημά σας",
+    dates: "Ημερομηνίες",
+    nights: "διανυκτερεύσεις",
+    guests: "Επισκέπτες",
+    signOff: "Με θερμούς χαιρετισμούς,",
+    hosts: "Έτι & Ζέεβικ",
+    place: "Green Villa, Εύβοια",
+  },
+};
+
+function guestEmail(inquiry: Inquiry, language: Language, replyTo: string[]): Email {
+  const copy = guestCopy[language];
+  const rows: [string, string][] = [
+    [copy.dates, `${inquiry.checkIn} → ${inquiry.checkOut} (${nights(inquiry)} ${copy.nights})`],
+    [copy.guests, inquiry.guests],
+  ];
+  const greeting = copy.greeting(inquiry.firstName);
+  const style = "font-family:sans-serif;font-size:15px;line-height:1.55";
+
+  return {
+    to: [inquiry.email],
+    replyTo,
+    subject: copy.subject,
+    text: [
+      greeting,
+      "",
+      copy.paragraphs[0],
+      "",
+      `${copy.summary}:`,
+      ...rows.map(([label, value]) => `${label}: ${value}`),
+      "",
+      ...copy.paragraphs.slice(1),
+      "",
+      copy.signOff,
+      copy.hosts,
+      copy.place,
+    ].join("\n"),
+    html: `<div dir="${copy.dir}" style="${style}">
+<p>${escapeHtml(greeting)}</p>
+<p>${copy.paragraphs[0]}</p>
+<p style="margin-bottom:4px"><strong>${copy.summary}</strong></p>
+${htmlTable(rows)}
+${copy.paragraphs
+  .slice(1)
+  .map((paragraph) => `<p>${paragraph}</p>`)
   .join("\n")}
-</table>
-<p style="font-family:sans-serif;font-size:13px;color:#666">Reply to this email to answer the guest, or approve it in /admin.</p>`;
-
-  return { subject: `New inquiry: ${name}, ${inquiry.checkIn} → ${inquiry.checkOut}`, text, html };
+<p>${copy.signOff}<br>${copy.hosts}<br><span style="color:#666">${copy.place}</span></p>
+</div>`,
+  };
 }
 
-async function send(inquiry: Inquiry): Promise<NotifyResult> {
-  const from = process.env.NOTIFY_FROM?.trim() || DEFAULT_FROM;
-  // Trimmed: a key pasted into a dashboard easily picks up a trailing space or
-  // newline, which Resend then rejects as invalid.
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) return { sent: false, to: [], from, error: "RESEND_API_KEY is not set." };
+// ── Entry points ─────────────────────────────────────────────────────────────
 
-  let to: string[] = [];
-  try {
-    to = await recipients();
-    if (to.length === 0) return { sent: false, to, from, error: "No one to send to." };
-
-    const response = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, reply_to: inquiry.email, ...render(inquiry) }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if (response.ok) return { sent: true, to, from };
-
-    const body = (await response.json().catch(() => null)) as { message?: string } | null;
-    const reason = body?.message ?? response.statusText;
-    return { sent: false, to, from, error: `Resend ${response.status}: ${reason}` };
-  } catch (error) {
-    return { sent: false, to, from, error: error instanceof Error ? error.message : String(error) };
-  }
-}
-
-export async function notifyNewInquiry(inquiry: Inquiry): Promise<void> {
+/** Tells the hosts and confirms to the guest, side by side. Never throws. */
+export async function notifyNewInquiry(inquiry: Inquiry, language: Language): Promise<void> {
   if (!notificationsConfigured()) return;
-  const result = await send(inquiry);
-  if (!result.sent) console.error(`Inquiry email failed: ${result.error}`);
+  let hostAddresses: string[] = [];
+  try {
+    hostAddresses = await hosts();
+  } catch (error) {
+    console.error("Could not look up who to email:", error);
+  }
+
+  const [toHosts, toGuest] = await Promise.all([
+    send(hostEmail(inquiry, hostAddresses)),
+    send(guestEmail(inquiry, language, hostAddresses)),
+  ]);
+  if (!toHosts.sent) console.error(`Inquiry email to hosts failed: ${toHosts.error}`);
+  if (!toGuest.sent) console.error(`Confirmation email to guest failed: ${toGuest.error}`);
 }
 
-/** Sends a made-up inquiry and reports exactly what the mail provider said. */
-export function sendTestEmail(replyTo: string): Promise<NotifyResult> {
-  return send({
-    id: "test",
-    status: "pending",
-    submittedAt: new Date().toISOString(),
-    firstName: "Test",
-    lastName: "Guest",
-    email: replyTo,
-    checkIn: "2026-10-01",
-    checkOut: "2026-10-05",
-    guests: "2",
-    message: "A test from the admin page. If you can read this, inquiry emails work.",
-  });
+/** Sends a made-up inquiry to the hosts and reports exactly what the mail provider said. */
+export async function sendTestEmail(replyTo: string): Promise<NotifyResult> {
+  let to: string[];
+  try {
+    to = await hosts();
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { sent: false, to: [], from: "", error: reason };
+  }
+  return send(
+    hostEmail(
+      {
+        id: "test",
+        status: "pending",
+        submittedAt: new Date().toISOString(),
+        firstName: "Test",
+        lastName: "Guest",
+        email: replyTo,
+        checkIn: "2026-10-01",
+        checkOut: "2026-10-05",
+        guests: "2",
+        message: "A test from the admin page. If you can read this, inquiry emails work.",
+      },
+      to,
+    ),
+  );
 }

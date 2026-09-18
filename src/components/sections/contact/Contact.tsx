@@ -64,7 +64,7 @@ const channelLabels = {
 } as const;
 
 export function Contact({ stay }: ContactProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const formId = useId();
   const [values, setValues] = useState<FormValues>(emptyValues);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -107,7 +107,7 @@ export function Contact({ stay }: ContactProps) {
 
     setSending(true);
     try {
-      await createInquiry(values);
+      await createInquiry(values, language);
       setConfirmation(values);
       setValues({ ...emptyValues, guests: values.guests });
     } catch (caught) {

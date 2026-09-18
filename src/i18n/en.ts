@@ -239,6 +239,7 @@ export const en: Dictionary = {
     address: "Address",
     email: "Email",
     phone: "Phone",
+    coordinator: "Accessibility coordinator",
     ama: "AMA",
     amaFull: "Greek short-term rental registry number (AMA)",
     formNotice: "We use these details only to answer your booking request.",

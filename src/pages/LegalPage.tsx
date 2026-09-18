@@ -2,11 +2,13 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Footer } from "../components/layout/Footer";
 import { LanguagePicker } from "../components/layout/LanguagePicker";
-import { OperatorContact } from "../components/legal/OperatorContact";
+import { CoordinatorContact, OperatorContact } from "../components/legal/OperatorContact";
 import { WithPlaceholders } from "../components/legal/Placeholder";
+import { accessibilityUpdated } from "../data/accessibility";
 import { operator } from "../data/operator";
 import { dictionaries } from "../i18n/dictionaries";
-import { languages, useLanguage, type Dictionary, type Language } from "../i18n";
+import { languageMeta, languages, useLanguage, type Dictionary, type Language } from "../i18n";
+import { formatLongDate } from "../lib/date";
 import { legalDocuments, legalPath, type LegalBlock, type LegalPage as Page } from "../legal";
 
 /** Below this many sections a table of contents is more clutter than help. */
@@ -62,6 +64,7 @@ function Block({ block, t, language }: { block: LegalBlock; t: Dictionary; langu
       </p>
     );
   }
+  if ("coordinator" in block) return <CoordinatorContact t={t} />;
   return <OperatorContact t={t} />;
 }
 
@@ -139,7 +142,11 @@ export default function LegalPage({ page }: { page: Page }) {
     language button that was just pressed.
   */
   const t = dictionaries[urlLanguage];
-  const showUpdated = page !== "accessibility";
+  // The accessibility statement is reviewed on its own schedule, against the site.
+  const updated =
+    page === "accessibility"
+      ? formatLongDate(accessibilityUpdated, languageMeta[urlLanguage].locale)
+      : operator.lastUpdated;
 
   return (
     <>
@@ -171,11 +178,9 @@ export default function LegalPage({ page }: { page: Page }) {
           >
             {doc.title}
           </h1>
-          {showUpdated ? (
-            <p className="mt-3 font-sans text-[14px] text-slate">
-              {t.legal.lastUpdated} <WithPlaceholders text={operator.lastUpdated} />
-            </p>
-          ) : null}
+          <p className="mt-3 font-sans text-[14px] text-slate">
+            {t.legal.lastUpdated} <WithPlaceholders text={updated} />
+          </p>
           <p className="mt-6 font-sans text-[17px] leading-[1.75] text-slate sm:text-[18px]">
             <WithPlaceholders text={doc.summary} />
           </p>

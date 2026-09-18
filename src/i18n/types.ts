@@ -137,6 +137,8 @@ export interface Dictionary {
     address: string;
     email: string;
     phone: string;
+    /** Label for the accessibility coordinator's name, in the accessibility statement. */
+    coordinator: string;
     /** The registry number's short name, as it is printed: "AMA" / "ΑΜΑ". */
     ama: string;
     /** What the AMA is, spelled out, for the property page. */

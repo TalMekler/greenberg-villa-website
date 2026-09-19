@@ -105,7 +105,7 @@ export const en: LegalDocuments = {
               ],
               [
                 "Vercel",
-                "Hosts the website and keeps server logs. Requests are processed in [[VERCEL_REGION]].",
+                "Hosts the website and keeps server logs. Requests are processed in Frankfurt, Germany, in the European Union.",
               ],
               [
                 "Resend",

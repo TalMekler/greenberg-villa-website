@@ -154,7 +154,7 @@ export async function ensureSchema(): Promise<void> {
     )
   `);
 
-  // One row per photo. `slot` is where it appears: hero, lifestyle, an explore
+  // One row per photo. `slot` is where it appears: hero, lifestyle, hosts, an explore
   // slug, or gallery. Gallery is the only many-row slot; `position` orders it.
   await query(`
     CREATE TABLE IF NOT EXISTS site_images (

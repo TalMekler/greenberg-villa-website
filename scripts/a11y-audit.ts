@@ -35,6 +35,7 @@ type Language = (typeof languages)[number];
 const seedAlts = {
   hero: "Green Villa seen from the garden, with the bay behind it",
   lifestyle: "Sun-drenched bedroom opening onto the villa's sea-facing terrace",
+  hosts: "Eti, the host of Green Villa, smiling",
   gallery: [
     "Infinity pool overlooking the Aegean at sunset",
     "Master bedroom with linen bedding and sea view",
@@ -66,6 +67,7 @@ const image = (id: string, file: string, alt: string) => ({
 const siteImages = {
   hero: image("hero", "hero", seedAlts.hero),
   lifestyle: image("lifestyle", "lifestyle", seedAlts.lifestyle),
+  hosts: image("hosts", "hosts", seedAlts.hosts),
   gallery: seedAlts.gallery.map((alt, index) => image(`g${index}`, `gallery-${index + 1}`, alt)),
   explore: Object.fromEntries(
     Object.entries(seedAlts.explore).map(([slug, [file, alt]]) => [slug, image(slug, file, alt)]),
@@ -261,7 +263,7 @@ async function publicSite(page: Page, language: Language) {
   check(scenario, "img-alt-present", images.every((img) => img.alt !== null), "Every <img> has an alt attribute",
     images.filter((img) => img.alt === null).map((img) => img.src));
   const photos = images.filter((img) => !img.hidden && img.src.includes("/api/media/"));
-  const english = new Set<string>([...Object.values(seedAlts.explore).map(([, alt]) => alt), seedAlts.hero, seedAlts.lifestyle, ...seedAlts.gallery]);
+  const english = new Set<string>([...Object.values(seedAlts.explore).map(([, alt]) => alt), seedAlts.hero, seedAlts.lifestyle, seedAlts.hosts, ...seedAlts.gallery]);
   const untranslated = photos.filter(
     (img) => language !== "en" && img.alt && english.has(img.alt) && img.lang !== "en",
   );

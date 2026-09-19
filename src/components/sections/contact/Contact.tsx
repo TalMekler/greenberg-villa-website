@@ -1,11 +1,12 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { legalPath } from "../../../legal";
-import { images } from "../../../assets/images";
 import { contactChannels } from "../../../data/site";
 import { useLanguage } from "../../../i18n";
 import type { Dictionary } from "../../../i18n";
 import { toDateKey } from "../../../lib/date";
+import { localizeAlt } from "../../../i18n/imageAlts";
+import type { SiteImage } from "../../../lib/site-images";
 import { ApiError, createInquiry } from "../../../lib/api";
 import { Icon } from "../../ui/Icon";
 import { SectionHeading } from "../../ui/SectionHeading";
@@ -17,6 +18,8 @@ import type { FormErrors, FormValues } from "./types";
 
 interface ContactProps {
   stay: Stay | null;
+  /** The host's portrait; null until the site photos have loaded. */
+  hostsImage: SiteImage | null;
 }
 
 const emptyValues: FormValues = {
@@ -80,8 +83,9 @@ const channelLabels = {
   mail: "email",
 } as const;
 
-export function Contact({ stay }: ContactProps) {
+export function Contact({ stay, hostsImage }: ContactProps) {
   const { t, language } = useLanguage();
+  const hostsAlt = hostsImage ? localizeAlt(hostsImage.alt, language, t.contact.hosts.photoAlt) : null;
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const policyLinkRef = useRef<HTMLAnchorElement>(null);
@@ -379,13 +383,18 @@ export function Contact({ stay }: ContactProps) {
 
           <div className="flex w-full flex-col gap-10 lg:w-[45%]">
             <div className="reveal flex items-center gap-6 rounded-lg border border-navy-line bg-[rgba(42,78,112,0.25)] p-6">
-              <img
-                src={images.hosts}
-                alt={t.contact.hosts.photoAlt}
-                width={80}
-                height={80}
-                className="size-20 shrink-0 rounded-full object-cover"
-              />
+              {hostsImage && hostsAlt ? (
+                <img
+                  src={hostsImage.url}
+                  alt={hostsAlt.alt}
+                  lang={hostsAlt.lang}
+                  width={80}
+                  height={80}
+                  className="size-20 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <div aria-hidden="true" className="size-20 shrink-0 rounded-full bg-navy-line" />
+              )}
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <p className="font-sans text-[14px] font-bold tracking-[0.06em] text-cream uppercase">
                   {t.contact.hosts.label}

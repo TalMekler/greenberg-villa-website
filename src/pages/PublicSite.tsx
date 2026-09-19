@@ -119,7 +119,7 @@ export default function PublicSite() {
           {images ? <Explore images={images.explore} /> : null}
           <Availability stay={stay} onStayChange={setStay} availability={availability} />
           <Transit />
-          <Contact stay={stay} />
+          <Contact stay={stay} hostsImage={images?.hosts ?? null} />
         </main>
         <Footer />
       </div>

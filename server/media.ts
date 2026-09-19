@@ -5,6 +5,7 @@ import { query, transaction } from "./db";
 import { listSweepable, pathFromUrl, remove, upload, uploadAs } from "./storage";
 import {
   exploreSlugs,
+  singleImageKeys,
   type ExploreSlug,
   type SingleImageKey,
   type SiteImage,
@@ -28,6 +29,10 @@ const defaults = {
   lifestyle: {
     file: "lifestyle.jpg",
     alt: "Sun-drenched bedroom opening onto the villa's sea-facing terrace",
+  },
+  hosts: {
+    file: "hosts.jpg",
+    alt: "Eti, the host of Green Villa, smiling",
   },
 } satisfies Record<SingleImageKey, { file: string; alt: string }>;
 
@@ -88,7 +93,7 @@ const toImage = ({ id, url, alt, uploadedAt }: Row): SiteImage => ({ id, url, al
 
 /** Every record in the store, whatever slot it sits in. */
 function allImages(images: SiteImages): SiteImage[] {
-  return [images.hero, images.lifestyle, ...images.gallery, ...Object.values(images.explore)];
+  return [images.hero, images.lifestyle, images.hosts, ...images.gallery, ...Object.values(images.explore)];
 }
 
 /** Builds the API shape from the table, or null when a slot has no row yet. */
@@ -104,7 +109,8 @@ async function readStore(): Promise<SiteImages | null> {
 
   const hero = bySlot.get("hero")?.[0];
   const lifestyle = bySlot.get("lifestyle")?.[0];
-  if (!hero || !lifestyle) return null;
+  const hosts = bySlot.get("hosts")?.[0];
+  if (!hero || !lifestyle || !hosts) return null;
 
   const explore = {} as Record<ExploreSlug, SiteImage>;
   for (const slug of exploreSlugs) {
@@ -116,6 +122,7 @@ async function readStore(): Promise<SiteImages | null> {
   return {
     hero: toImage(hero),
     lifestyle: toImage(lifestyle),
+    hosts: toImage(hosts),
     gallery: (bySlot.get("gallery") ?? []).map(toImage),
     explore,
   };
@@ -140,15 +147,24 @@ async function seedFrom(sourceName: string, alt: string, slot: string): Promise<
 /**
  * Fills the table from the images the site shipped with, so the admin edits
  * real records from the first run instead of a mix of bundled and uploaded.
+ *
+ * Only empty slots are filled. A slot added after launch (the host portrait)
+ * then arrives on a live site without touching the photos the admin already
+ * replaced, and the gallery is only seeded into a brand-new store — otherwise
+ * photos the admin deleted from it would come back.
  */
 async function seed(): Promise<SiteImages> {
+  const filled = new Set(
+    (await query<{ slot: string }>(`SELECT DISTINCT slot FROM site_images`)).map((row) => row.slot),
+  );
   const rows: (SiteImage & { slot: string; position: number })[] = [];
 
-  for (const key of ["hero", "lifestyle"] as SingleImageKey[]) {
+  for (const key of singleImageKeys) {
+    if (filled.has(key)) continue;
     const preset = defaults[key];
     rows.push({ ...(await seedFrom(preset.file, preset.alt, key)), slot: key, position: 0 });
   }
-  for (const [index, alt] of galleryDefaults.entries()) {
+  for (const [index, alt] of filled.size === 0 ? galleryDefaults.entries() : []) {
     const slot = `gallery-${index}`;
     rows.push({
       ...(await seedFrom(`gallery-${index + 1}.jpg`, alt, slot)),
@@ -158,6 +174,7 @@ async function seed(): Promise<SiteImages> {
     });
   }
   for (const slug of exploreSlugs) {
+    if (filled.has(slug)) continue;
     const preset = exploreDefaults[slug];
     rows.push({ ...(await seedFrom(preset.file, preset.alt, slug)), slot: slug, position: 0 });
   }
@@ -219,7 +236,7 @@ async function store(buffer: Buffer, originalName: string, mimeType: string): Pr
   return { id: crypto.randomUUID(), url, alt: "", uploadedAt: new Date().toISOString() };
 }
 
-/** Replaces one of the single-slot photos (hero, lifestyle). */
+/** Replaces one of the single-slot photos (hero, lifestyle, hosts). */
 export async function replaceSingle(
   key: SingleImageKey,
   buffer: Buffer,

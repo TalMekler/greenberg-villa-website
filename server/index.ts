@@ -300,7 +300,7 @@ function uploadedFile(request: express.Request): Express.Multer.File | null {
   return sniffImageType(file.buffer) === file.mimetype ? file : null;
 }
 
-/** Replaces one of the single-slot photos: `hero` or `lifestyle`. */
+/** Replaces one of the single-slot photos: `hero`, `lifestyle` or `hosts`. */
 app.post(
   "/api/site-images/single/:key",
   requireSettledPassword,

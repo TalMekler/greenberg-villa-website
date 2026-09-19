@@ -19,6 +19,10 @@ const translations: Record<string, { he: string; el: string }> = {
     he: "חדר שינה מואר בשמש הנפתח אל המרפסת הפונה לים",
     el: "Ηλιόλουστο υπνοδωμάτιο που ανοίγει στη βεράντα με θέα στη θάλασσα",
   },
+  "Eti, the host of Green Villa, smiling": {
+    he: "אתי, המארחת של וילה גרין, מחייכת",
+    el: "Η Έτι, η οικοδέσποινα της Green Villa, χαμογελαστή",
+  },
   "Infinity pool overlooking the Aegean at sunset": {
     he: "בריכת אינסוף המשקיפה אל הים האגאי בשקיעה",
     el: "Πισίνα υπερχείλισης με θέα στο Αιγαίο στο ηλιοβασίλεμα",

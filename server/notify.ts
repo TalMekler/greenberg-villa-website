@@ -1,4 +1,4 @@
-import { contactNumbers } from "../src/lib/contact";
+import { contactNumbers, contactPerson, telHref, whatsappHref } from "../src/lib/contact";
 import type { Language } from "../src/i18n/types";
 import type { Inquiry } from "../src/lib/inquiry";
 import type { NotifyResult } from "../src/lib/notify";
@@ -219,12 +219,15 @@ function guestEmail(inquiry: Inquiry, language: Language): Email {
   const greeting = copy.greeting(inquiry.firstName);
   // The same numbers the contact section shows, so the two never disagree.
   const { whatsapp, phone } = contactNumbers;
+  const person = contactPerson[language];
   const style = "font-family:sans-serif;font-size:15px;line-height:1.55";
 
   // Phone numbers are isolated as left-to-right, or a Hebrew email shows their
-  // digit groups in reverse order.
-  const isolate = (value: string) => `⁦${value}⁩`;
-  const ltrSpan = (value: string) => `<span dir="ltr">${escapeHtml(value)}</span>`;
+  // digit groups in reverse order. Each is followed by who answers it.
+  const isolate = (value: string) => `⁦${value}⁩ (${person})`;
+  // In the HTML version they are links: one opens a WhatsApp chat, the other dials.
+  const ltrLink = (value: string, href: string) =>
+    `<a href="${escapeHtml(href)}" dir="ltr">${escapeHtml(value)}</a> (${escapeHtml(person)})`;
 
   return {
     to: [inquiry.email],
@@ -250,7 +253,7 @@ function guestEmail(inquiry: Inquiry, language: Language): Email {
 <p>${copy.intro}</p>
 <p style="margin-bottom:4px"><strong>${copy.summary}</strong></p>
 ${htmlTable(rows)}
-<p>${copy.contact(ltrSpan(whatsapp), ltrSpan(phone))}</p>
+<p>${copy.contact(ltrLink(whatsapp, whatsappHref(whatsapp)), ltrLink(phone, telHref(phone)))}</p>
 <p>${copy.signOff}<br>${copy.hosts}<br><span style="color:#666">${copy.place}</span></p>
 <p style="font-size:12px;color:#888">${copy.noReply}</p>
 </div>`,

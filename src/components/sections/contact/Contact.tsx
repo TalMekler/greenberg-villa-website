@@ -2,6 +2,7 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { legalPath } from "../../../legal";
 import { contactChannels } from "../../../data/site";
+import { contactPerson } from "../../../lib/contact";
 import { useLanguage } from "../../../i18n";
 import type { Dictionary } from "../../../i18n";
 import { toDateKey } from "../../../lib/date";
@@ -408,9 +409,13 @@ export function Contact({ stay, hostsImage }: ContactProps) {
 
             <ul className="reveal flex flex-col gap-5">
               {contactChannels.map((channel) => (
-                <li key={channel.value}>
+                <li key={channel.icon}>
                   <a
                     href={channel.href}
+                    // WhatsApp opens in a new tab on a desktop; the site stays put.
+                    {...(channel.href.startsWith("https:")
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
                     className="group flex items-center gap-4 rounded-lg transition-opacity hover:opacity-80"
                   >
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[rgba(42,78,112,0.5)] transition-colors group-hover:bg-[rgba(42,78,112,0.9)]">
@@ -421,8 +426,14 @@ export function Contact({ stay, hostsImage }: ContactProps) {
                         {t.contact.channels[channelLabels[channel.icon]]}
                       </span>
                       {/* Numbers and addresses read left to right, even on the Hebrew page. */}
-                      <span dir="ltr" className="font-sans text-[16px] text-white rtl:text-end">
-                        {channel.value}
+                      <span className="font-sans text-[16px] text-white">
+                        <span dir="ltr">{channel.value}</span>
+                        {channel.withPerson ? (
+                          <span className="text-cream"> ({contactPerson[language]})</span>
+                        ) : null}
+                        {channel.href.startsWith("https:") ? (
+                          <span className="sr-only"> {t.legal.newTab}</span>
+                        ) : null}
                       </span>
                     </span>
                   </a>

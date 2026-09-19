@@ -1,5 +1,5 @@
 import type { IconName } from "../assets/icons";
-import { contactNumbers } from "../lib/contact";
+import { contactNumbers, telHref, whatsappHref } from "../lib/contact";
 import { exploreSlugs, type ExploreSlug } from "../lib/site-images";
 import type { NavLink } from "../types";
 
@@ -21,15 +21,14 @@ export const exploreSlugOrder: ExploreSlug[] = [...exploreSlugs];
 /** Step icons, in order; the copy lives in the dictionaries. */
 export const transitIcons: IconName[] = ["plane", "car", "ship"];
 
-const digits = (value: string) => value.replace(/\D/g, "");
-
-/** Icons and links; the labels come from the dictionaries. */
+/** Icons and links; the labels come from the dictionaries. The numbers name who answers them. */
 export const contactChannels = [
   {
     icon: "messageSquare",
-    href: `https://wa.me/${digits(contactNumbers.whatsapp)}`,
+    href: whatsappHref(contactNumbers.whatsapp),
     value: contactNumbers.whatsapp,
+    withPerson: true,
   },
-  { icon: "phone", href: `tel:+${digits(contactNumbers.phone)}`, value: contactNumbers.phone },
-  { icon: "mail", href: "mailto:Greenbergeti63@gmail.com", value: "Greenbergeti63@gmail.com" },
-] as const satisfies readonly { icon: IconName; href: string; value: string }[];
+  { icon: "phone", href: telHref(contactNumbers.phone), value: contactNumbers.phone, withPerson: true },
+  { icon: "mail", href: "mailto:welcome@greenvilla.gr", value: "welcome@greenvilla.gr", withPerson: false },
+] as const satisfies readonly { icon: IconName; href: string; value: string; withPerson: boolean }[];

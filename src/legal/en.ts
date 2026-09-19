@@ -129,7 +129,7 @@ export const en: LegalDocuments = {
         heading: "International transfers",
         blocks: [
           "We manage bookings from Israel. The European Commission has recognised Israel as providing an adequate level of protection for personal data.",
-          "Some of our service providers are based in, or process data in, the United States or other countries outside the European Economic Area. For those transfers we rely on [[TRANSFER_MECHANISM]]. You can ask us for more information about these safeguards.",
+          "Some of our service providers are based in, or process data in, the United States or other countries outside the European Economic Area. For those transfers we rely on the EU–U.S. Data Privacy Framework for providers certified under it, and otherwise on the European Commission’s Standard Contractual Clauses. You can ask us for more information about these safeguards.",
         ],
       },
       {

@@ -112,7 +112,7 @@ export const en: LegalDocuments = {
                 "Sends the emails about your request: the notification to us, and the confirmation to you.",
               ],
               [
-                "[[HOST_EMAIL_PROVIDER]]",
+                "Google (Gmail)",
                 "Our email provider, where notifications of your request are received and where we correspond with you.",
               ],
               [

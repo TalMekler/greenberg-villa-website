@@ -101,7 +101,7 @@ export const en: LegalDocuments = {
             terms: [
               [
                 "Supabase",
-                "Stores the database with booking requests, and provides live updates. Data is stored in [[SUPABASE_REGION]].",
+                "Stores the database with booking requests, and provides live updates. Data is stored in Frankfurt, Germany, in the European Union.",
               ],
               [
                 "Vercel",

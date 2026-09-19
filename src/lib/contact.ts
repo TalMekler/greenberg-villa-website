@@ -3,6 +3,6 @@
 
 /** The villa's numbers, as shown in the contact section and the guest's confirmation email. */
 export const contactNumbers = {
-  whatsapp: "+30 691 234 5678",
-  phone: "+30 210 987 6543",
+  whatsapp: "+30 698 598 9511 (Matina)",
+  phone: "+30 698 598 9511 (Matina)",
 } as const;

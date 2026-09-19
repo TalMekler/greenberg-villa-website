@@ -217,7 +217,7 @@ export const en: Dictionary = {
       names: "Eti",
       photoAlt: "Eti, the host of Green Villa, smiling",
       quote:
-        '"We\'ve been welcoming guests to our beloved family villa on Evia island since 2015."',
+        '"We\'re so happy — and truly excited — to welcome you to our beloved family villa on Evia."',
     },
     channels: { whatsapp: "WhatsApp", phone: "Phone", email: "Email" },
   },

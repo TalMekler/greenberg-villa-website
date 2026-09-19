@@ -460,7 +460,6 @@ export const en: LegalDocuments = {
               "Descriptions added later: if we add a new photo, its description may be available in English only until it is translated. It is marked as English, so a screen reader reads it with an English voice.",
               "Text over the main photo: the contrast of the title and subtitle over the large photo at the top of the page was checked by calculation, because automated tools cannot measure text over images. On an unusually short, wide window, over a very bright photo, the subtitle may fall slightly below the required contrast.",
               "The map is visual by nature. Please use the text next to it, which gives the same information. The map provider's attribution line is third-party content and was not tested.",
-              "In Hebrew, the quotation marks in the hosts' quote may appear in the wrong place around the year.",
               "The site has not yet been tested with a screen reader in use (such as NVDA or VoiceOver). Its structure was checked with automated tools and by inspecting the information it exposes to assistive technology.",
               "Automated testing was done in Google Chrome only. Other browsers were not tested systematically.",
               "The hosts' management area (not used by guests) is in English only, and on narrow screens its table of booking requests has to be scrolled sideways.",

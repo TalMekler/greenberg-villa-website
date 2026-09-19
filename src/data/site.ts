@@ -30,5 +30,5 @@ export const contactChannels = [
     withPerson: true,
   },
   { icon: "phone", href: telHref(contactNumbers.phone), value: contactNumbers.phone, withPerson: true },
-  { icon: "mail", href: "mailto:welcome@greenvilla.gr", value: "welcome@greenvilla.gr", withPerson: false },
+  { icon: "mail", href: "mailto:Greenbergeti63@gmail.com", value: "Greenbergeti63@gmail.com", withPerson: false },
 ] as const satisfies readonly { icon: IconName; href: string; value: string; withPerson: boolean }[];

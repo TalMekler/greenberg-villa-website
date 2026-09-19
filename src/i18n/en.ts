@@ -206,16 +206,16 @@ export const en: Dictionary = {
     },
     sent: {
       title: "Request sent",
-      body: "Thank you, {name}. Eti & Zeevik have your request and usually reply within 24 hours.",
+      body: "Thank you, {name}. Eti has your request and usually replies within 24 hours.",
       dates: "Dates",
       guests: "Guests",
       replyTo: "We'll reply to",
       another: "Send another request",
     },
     hosts: {
-      label: "Your Hosts",
-      names: "Eti & Zeevik",
-      photoAlt: "Eti and Zeevik, the hosts of Green Villa, smiling together",
+      label: "Your Host",
+      names: "Eti",
+      photoAlt: "Eti, the host of Green Villa, smiling",
       quote:
         '"We\'ve been welcoming guests to our beloved family villa on Evia island since 2015."',
     },

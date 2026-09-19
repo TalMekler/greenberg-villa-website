@@ -151,12 +151,13 @@ second one is fatal rather than merely wasteful:
   IPv6-only. Vercel's functions are IPv4, so they cannot resolve it at all, and
   the API fails at startup with `ENOTFOUND`.
 
-The pooled URI differs in three places, all easy to miss when typing it by hand:
+The pooled URI differs in three places, all easy to miss when typing it by hand
+(the project is in `eu-central-1`, so that is the region in the pooler host):
 
 ```
-postgresql://postgres.<ref>:<password>@aws-N-<region>.pooler.supabase.com:6543/postgres
-             ^^^^^^^^^^^^^^                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^
-             user carries the ref          pooler host, not db.<ref>          6543
+postgresql://postgres.<ref>:<password>@aws-N-eu-central-1.pooler.supabase.com:6543/postgres
+             ^^^^^^^^^^^^^^            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^^^
+             user carries the ref      pooler host, not db.<ref>              6543
 ```
 
 `GET /api/health` reports which variables the server can see and the driver's

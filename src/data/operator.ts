@@ -7,7 +7,7 @@
 */
 export const operator = {
   /** The legal name of whoever lets the villa — the data controller. */
-  name: "[[OWNER_NAME]]",
+  name: "Eti Greenberg",
   /** A postal address where notices and privacy requests can be sent. */
   address: "[[OWNER_ADDRESS]]",
   email: "[[EMAIL]]",

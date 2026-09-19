@@ -20,6 +20,8 @@ interface DateInputProps {
  * are ours, and the native value is only shown once there is one (or while
  * a desktop visitor is typing into it). Chrome lays the date out left-to-right
  * even in Hebrew, so it is pushed to the start edge to line up with the rest.
+ * iOS Safari also pins the value to the top of a styled date field, so the
+ * line height fills the field (52px less the borders) to centre it vertically.
  */
 export function DateInput({
   id,
@@ -52,7 +54,7 @@ export function DateInput({
         }}
         aria-invalid={invalid}
         aria-describedby={describedBy}
-        className={`peer ${className} block h-[52px] min-w-0 cursor-pointer appearance-none pe-12 text-start [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:block rtl:[&::-webkit-datetime-edit]:text-right [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-start ${
+        className={`peer ${className} block h-[52px] min-w-0 leading-[50px] cursor-pointer appearance-none pe-12 text-start [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-datetime-edit]:block rtl:[&::-webkit-datetime-edit]:text-right [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-start ${
           value ? "" : "not-focus:text-transparent"
         }`}
       />

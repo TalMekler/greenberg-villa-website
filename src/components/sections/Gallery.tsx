@@ -55,7 +55,7 @@ export function Gallery({ images }: { images: SiteImage[] }) {
   const rows = buildRows(images);
   // An upload the admin left undescribed still gets a name, never an empty alt.
   const alts = images.map((image, index) =>
-    localizeAlt(image.alt, language, `${t.gallery.title} ${index + 1} / ${images.length}`),
+    localizeAlt(image, language, `${t.gallery.title} ${index + 1} / ${images.length}`),
   );
 
   return (

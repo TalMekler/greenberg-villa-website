@@ -19,7 +19,7 @@ export function Explore({ images }: { images: Record<ExploreSlug, SiteImage> }) 
           {t.explore.cards.map((card, index) => {
             const slug = exploreSlugOrder[index];
             const photo = images[slug];
-            const alt = localizeAlt(photo.alt, language, card.title);
+            const alt = localizeAlt(photo, language, card.title);
             return (
             <li
               key={slug}

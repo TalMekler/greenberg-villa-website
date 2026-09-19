@@ -49,7 +49,7 @@ Each finding names the WCAG criterion, what was wrong, and the fix. Everything i
 | The hosts' portrait had a hard-coded English alt. | Translated (`t.contact.hosts.photoAlt`). |
 | The gallery button's name was an `aria-label` built from the alt, which cannot carry `lang`. | The button is now named by its contents: a translated sr-only "Open image:" plus the `<img>` with its `alt` and `lang`. |
 | Map: container label and marker alt hard-coded in English; Leaflet's zoom buttons read "Zoom in / Zoom out" in every language. | `VillaMap` takes `ariaLabel`, `zoomInTitle`, `zoomOutTitle`; the public map passes translations, and a language switch renames the zoom buttons in place. |
-| **Most seeded photo descriptions describe a different photo** (checked by looking at each image): the "Master bedroom" is the living room, the "Stone terrace above the cliffs" is a bedroom, the "Al fresco dining terrace" is the beach jetty, the "Sunset over the bay" is the covered barbecue area, and so on — 7 of the 9 villa photos. The hero and the six Explore photos are accurate. | **Needs the admin — see "Action required" below.** The seed text is in `server/media.ts` and the live text is in the database, both out of scope. Corrected descriptions are written, and their Hebrew and Greek translations are already registered in `imageAlts.ts`, so they translate the moment they are entered. |
+| **Most seeded photo descriptions describe a different photo** (checked by looking at each image): the "Master bedroom" is the living room, the "Stone terrace above the cliffs" is a bedroom, the "Al fresco dining terrace" is the beach jetty, the "Sunset over the bay" is the covered barbecue area, and so on — 7 of the 9 villa photos. The hero and the six Explore photos are accurate. | Corrected in the database and in the seed text (`server/media.ts`), in English, Hebrew and Greek — see "Photo descriptions" below. |
 | Icons (`Icon`), the hero scrims, the loader bar, the success tick and the transit step numbers are decorative. | Already `alt=""`/`aria-hidden`; transit step numbers ("01") now `aria-hidden` too, since the `<ol>` already numbers the steps. |
 
 ### 1.3.1 Info and relationships · 2.4.6 Headings and labels
@@ -156,13 +156,15 @@ Plain `terracotta` stays for decoration where no contrast rule applies (the nav 
 | Admin forms (change password, add user, map location, add photo): errors were shown but not tied to their fields. | `FieldError` takes an `id`; each control has `aria-invalid` and an `aria-describedby` that includes its hint and its error. |
 | Admin "Description" field for a new photo gave no guidance. | A hint explains it is the alt text read to blind visitors, with an example. |
 
-## Action required (not code)
+## Photo descriptions
 
-**Correct the photo descriptions in the admin.** In `/admin` → Site photos, paste each description below into the photo's *Description* field. They are registered in `src/i18n/imageAlts.ts`, so Hebrew and Greek visitors get the translation as soon as the English text matches exactly.
+Every photo stores its description in three columns of `site_images`: `alt` (English, required), `altHe` and `altEl`. The admin's *Description* has a field for each. The site reads the one for the page's language; an empty Hebrew or Greek one falls back to the translation table in `src/i18n/imageAlts.ts`, then to the English marked `lang="en"`.
 
-| Photo (seed file) | Current description (wrong) | Paste this |
+The live rows were corrected on 2026-09-19 after checking each photo; `server/media.ts` seeds the same text:
+
+| Photo (seed file) | Was | Now (English) |
 |---|---|---|
-| Hero (`hero.jpg`) | Green Villa seen from the garden, with the bay behind it *(close; no bay in shot)* | Green Villa's white two-storey façade with blue shutters, seen across the lawn |
+| Hero (`hero.jpg`) | Green Villa seen from the garden, with the bay behind it | Green Villa's white two-storey façade with blue shutters, seen across the lawn |
 | Lifestyle (`lifestyle.jpg`) | Sun-drenched bedroom opening onto the villa's sea-facing terrace | Balcony table and two wooden chairs looking out over the garden to the sea |
 | Gallery 1 | Infinity pool overlooking the Aegean at sunset | Raised plunge pool under white shade sails in the garden, with the sea beyond |
 | Gallery 2 | Master bedroom with linen bedding and sea view | Living room with two grey sofas, glass coffee tables and a jute rug |
@@ -172,22 +174,19 @@ Plain `terracotta` stays for decoration where no contrast rule applies (the nav 
 | Gallery 6 | Sunset over the bay seen from the villa | Covered outdoor dining area with a long table, white chairs and a built-in barbecue |
 | Gallery 7 | Al fresco dining terrace lit for the evening | Wooden jetty on the pebble beach with striped loungers and towels |
 
-This assumes the live photos are still the seed photos. If the admin has since replaced any, describe the photo actually shown instead; a new English description is still read correctly (marked `lang="en"`), just not translated until its translation is added to `imageAlts.ts`.
-
-The seed text itself in `server/media.ts` (`defaults`, `galleryDefaults`) should get the same corrections so a fresh database starts right — left untouched here because server code was out of scope.
+The host portrait and the six Explore photos kept their English text and gained Hebrew and Greek.
 
 ## Known limitations — not fixed
 
-1. **Alt text is stored in one language.** The API has a single `alt` column per photo. Translations exist only for the known descriptions in `imageAlts.ts`; any other text the admin writes is read in English (correctly marked `lang="en"`). A real fix is a per-language alt (`alt_he`, `alt_el`) in the `site_images` table, the API and the admin form — a server change, out of scope.
-2. **Seed descriptions are wrong until the admin updates them** — see "Action required".
-3. **Hero contrast depends on the scrim, not the photo.** The scrim is sized for a pure-white photo at the text's position on a typical window; this was verified by calculation, not by axe (axe cannot measure text over images). On an unusually short, wide window the subtitle sits higher on the gradient and could dip under 4.5:1 over a very bright photo — check again if the hero layout changes.
-4. **The Leaflet map.** Keyboard users can pan (arrows) and zoom (+/−, or the buttons) once the map has focus, and it is labelled; but a map is inherently visual. The equivalent information is in text next to it (coordinates, "Open in maps" link, the three nearby places with distances), which is the accessible alternative. Leaflet's attribution control was excluded from axe as third-party markup.
-5. **Admin English only.** The admin is deliberately English and LTR (pinned); it is not translated.
-6. **Admin inquiries table** needs horizontal scrolling below 880px. Data tables are exempt from reflow (WCAG 1.4.10 exception for two-dimensional content), and the scrolling is inside the table's own container, not the page.
-7. **Hosts quote in Hebrew** uses straight ASCII quote marks that bidi places oddly around the year ("…מאז 2015."). Content, not structure; worth replacing with Hebrew gershayim in `he.ts` when the copy is next edited.
-8. **Not tested with a physical screen reader.** Semantics were verified through axe and the accessibility tree via the scripted checks; a manual pass with NVDA (Hebrew voice) and VoiceOver is still recommended before an IS 5568 declaration.
-9. **Accessibility statement.** Published at `/:lang/accessibility` in all three languages (`src/legal/{en,he,el}.ts`), listing the standard, what was made accessible and the limitations in this section. The coordinator's name, email and phone are still placeholders in `src/data/accessibility.ts`; the date shown on the page is set there too and should change whenever the statement does.
-10. **Browsers.** Automated checks ran in Chrome only. The date-input focus workaround is Chrome-specific; other browsers already match the base rule.
+1. **Hebrew and Greek descriptions are optional.** A photo the admin describes only in English is read in English on the Hebrew and Greek pages (correctly marked `lang="en"`) until its translations are filled in.
+2. **Hero contrast depends on the scrim, not the photo.** The scrim is sized for a pure-white photo at the text's position on a typical window; this was verified by calculation, not by axe (axe cannot measure text over images). On an unusually short, wide window the subtitle sits higher on the gradient and could dip under 4.5:1 over a very bright photo — check again if the hero layout changes.
+3. **The Leaflet map.** Keyboard users can pan (arrows) and zoom (+/−, or the buttons) once the map has focus, and it is labelled; but a map is inherently visual. The equivalent information is in text next to it (coordinates, "Open in maps" link, the three nearby places with distances), which is the accessible alternative. Leaflet's attribution control was excluded from axe as third-party markup.
+4. **Admin English only.** The admin is deliberately English and LTR (pinned); it is not translated.
+5. **Admin inquiries table** needs horizontal scrolling below 880px. Data tables are exempt from reflow (WCAG 1.4.10 exception for two-dimensional content), and the scrolling is inside the table's own container, not the page.
+6. **Hosts quote in Hebrew** uses straight ASCII quote marks that bidi places oddly around the year ("…מאז 2015."). Content, not structure; worth replacing with Hebrew gershayim in `he.ts` when the copy is next edited.
+7. **Not tested with a physical screen reader.** Semantics were verified through axe and the accessibility tree via the scripted checks; a manual pass with NVDA (Hebrew voice) and VoiceOver is still recommended before an IS 5568 declaration.
+8. **Accessibility statement.** Published at `/:lang/accessibility` in all three languages (`src/legal/{en,he,el}.ts`), listing the standard, what was made accessible and the limitations in this section. The coordinator's name, email and phone are still placeholders in `src/data/accessibility.ts`; the date shown on the page is set there too and should change whenever the statement does.
+9. **Browsers.** Automated checks ran in Chrome only. The date-input focus workaround is Chrome-specific; other browsers already match the base rule.
 
 ## Files changed
 

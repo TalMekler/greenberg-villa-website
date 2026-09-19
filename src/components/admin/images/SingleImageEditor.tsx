@@ -1,8 +1,14 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { updateImageAlt } from "../../../lib/api";
-import { MAX_IMAGE_BYTES, type SiteImage, type SiteImages } from "../../../lib/site-images";
-import { FieldError, adminFieldClass, adminLabelClass, smallButton } from "../shared";
-import { accept, maxMb, messageFor } from "./shared";
+import {
+  MAX_IMAGE_BYTES,
+  type ImageAlts,
+  type SiteImage,
+  type SiteImages,
+} from "../../../lib/site-images";
+import { FieldError, adminLabelClass, smallButton } from "../shared";
+import { AltFields } from "./AltFields";
+import { accept, altsOf, maxMb, messageFor } from "./shared";
 
 /** One replace-only photo slot: preview, file picker, description. */
 export function SingleImageEditor({
@@ -17,12 +23,12 @@ export function SingleImageEditor({
   hint?: string;
   image: SiteImage;
   previewClass?: string;
-  upload: (file: File, alt: string) => Promise<SiteImages>;
+  upload: (file: File, alts: ImageAlts) => Promise<SiteImages>;
   onChanged: (next: SiteImages) => void;
 }) {
   const fieldId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [alt, setAlt] = useState(image.alt);
+  const [alts, setAlts] = useState(() => altsOf(image));
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,7 +47,7 @@ export function SingleImageEditor({
     setBusy(true);
     try {
       // No file picked means the description alone is being corrected.
-      const next = file ? await upload(file, alt) : await updateImageAlt(image.id, alt);
+      const next = file ? await upload(file, alts) : await updateImageAlt(image.id, alts);
       onChanged(next);
       if (fileRef.current) fileRef.current.value = "";
       setStatus(file ? "Photo replaced." : "Description updated.");
@@ -81,17 +87,10 @@ export function SingleImageEditor({
             </p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor={`${fieldId}-alt`} className={adminLabelClass}>
-              Description
-            </label>
-            <input
-              id={`${fieldId}-alt`}
-              value={alt}
-              onChange={(event) => setAlt(event.target.value)}
-              className={adminFieldClass}
-            />
-          </div>
+          <fieldset className="flex flex-col gap-2">
+            <legend className={adminLabelClass}>Description</legend>
+            <AltFields id={`${fieldId}-alt`} value={alts} onChange={setAlts} />
+          </fieldset>
 
           <FieldError message={error ?? undefined} />
           {status ? (

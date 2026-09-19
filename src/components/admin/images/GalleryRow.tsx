@@ -2,7 +2,8 @@ import { useId, useState } from "react";
 import { deleteGalleryImage, reorderGallery, updateImageAlt } from "../../../lib/api";
 import type { SiteImage, SiteImages } from "../../../lib/site-images";
 import { FieldError, smallButton } from "../shared";
-import { messageFor } from "./shared";
+import { AltFields } from "./AltFields";
+import { altsOf, messageFor, sameAlts } from "./shared";
 
 /** One gallery photo, with description, reordering and delete. */
 export function GalleryRow({
@@ -18,7 +19,7 @@ export function GalleryRow({
   onChanged: (next: SiteImages) => void;
 }) {
   const fieldId = useId();
-  const [alt, setAlt] = useState(image.alt);
+  const [alts, setAlts] = useState(() => altsOf(image));
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -54,23 +55,21 @@ export function GalleryRow({
           className="h-[72px] w-[104px] shrink-0 rounded-[4px] object-cover"
         />
 
-        <div className="flex min-w-[220px] flex-1 flex-col gap-2">
-          <label htmlFor={fieldId} className="font-sans text-[12px] text-slate">
-            Description
-          </label>
-          <input
+        <fieldset className="flex min-w-[220px] flex-1 flex-col gap-2">
+          <legend className="font-sans text-[12px] font-bold text-slate">Description</legend>
+          <AltFields
             id={fieldId}
-            value={alt}
-            onChange={(event) => setAlt(event.target.value)}
-            className="w-full rounded-[4px] border border-field bg-white px-3 py-2 font-sans text-[13px] text-ink focus:border-navy"
+            value={alts}
+            onChange={setAlts}
+            fieldClass="w-full rounded-[4px] border border-field bg-white px-3 py-2 font-sans text-[13px] text-ink focus:border-navy"
           />
-        </div>
+        </fieldset>
 
         <div className="flex flex-wrap gap-2 self-center">
           <button
             type="button"
-            disabled={busy || alt.trim() === image.alt}
-            onClick={() => void run(() => updateImageAlt(image.id, alt))}
+            disabled={busy || sameAlts(alts, image)}
+            onClick={() => void run(() => updateImageAlt(image.id, alts))}
             className={`${smallButton} bg-navy text-white not-disabled:hover:bg-[#16304d]`}
           >
             Save

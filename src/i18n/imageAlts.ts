@@ -1,14 +1,14 @@
+import type { ImageAlts } from "../lib/site-images";
 import type { Language } from "./types";
 
 /*
-  Alt text for the site photos is stored by the API as a single English string
-  per image — the admin is English-only. The photos the site ships with have
-  known descriptions, so those are translated here, keyed by the exact English
-  text. An alt the admin has since written is not in this table, and is shown
-  as-is and marked `lang="en"`, so a screen reader reading a Hebrew or Greek
-  page switches voice for it rather than mispronouncing it.
-
-  Keep the keys in step with the seed descriptions in the API's media module.
+  Each photo carries its description in English, Hebrew and Greek (`alt`,
+  `altHe`, `altEl`). Where the Hebrew or Greek one is empty, this table of
+  known descriptions stands in, keyed by the exact English text — it covers
+  both the original seed text and the corrected descriptions. Failing both,
+  the English is shown as-is and marked `lang="en"`, so a screen reader
+  reading a Hebrew or Greek page switches voice for it rather than
+  mispronouncing it.
 */
 const translations: Record<string, { he: string; el: string }> = {
   "Green Villa seen from the garden, with the bay behind it": {
@@ -77,12 +77,10 @@ const translations: Record<string, { he: string; el: string }> = {
   },
 
   /*
-    Corrected descriptions. Most of the seed alts above describe a different
-    photo from the one they ship with (the "master bedroom" is the living room,
-    the "dining terrace" is the beach jetty). These describe the seed photos as
-    they actually are; once the admin pastes them into each photo's
-    Description, the translations below take over. See
-    docs/accessibility-audit.md for which text goes with which photo.
+    Corrected descriptions. Most of the original seed alts above describe a
+    different photo from the one they ship with (the "master bedroom" is the
+    living room, the "dining terrace" is the beach jetty). These describe the
+    seed photos as they actually are, and are what the API now seeds.
   */
   "Green Villa's white two-storey façade with blue shutters, seen across the lawn": {
     he: "החזית הלבנה בת שתי הקומות של וילה גרין, עם תריסים כחולים, במבט מעבר למדשאה",
@@ -133,11 +131,12 @@ export interface LocalizedAlt {
  * translation exists. `fallback` stands in when the admin left the alt empty,
  * so a photo that carries content is never silently made decorative.
  */
-export function localizeAlt(alt: string, language: Language, fallback = ""): LocalizedAlt {
-  const text = alt.trim();
+export function localizeAlt(image: ImageAlts, language: Language, fallback = ""): LocalizedAlt {
+  const text = image.alt.trim();
   if (!text) return { alt: fallback };
   if (language === "en") return { alt: text };
 
-  const translated = translations[text]?.[language];
+  const stored = (language === "he" ? image.altHe : image.altEl).trim();
+  const translated = stored || translations[text]?.[language];
   return translated ? { alt: translated } : { alt: text, lang: "en" };
 }

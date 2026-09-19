@@ -4,7 +4,7 @@ import type { SiteImage } from "../../lib/site-images";
 
 export function Hero({ image }: { image: SiteImage | null }) {
   const { t, language } = useLanguage();
-  const alt = image ? localizeAlt(image.alt, language, "Green Villa") : null;
+  const alt = image ? localizeAlt(image, language, "Green Villa") : null;
 
   return (
     // Exactly one viewport tall so the CTA is above the fold on load; min-h

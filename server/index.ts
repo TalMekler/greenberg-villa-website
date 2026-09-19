@@ -45,6 +45,7 @@ import {
   exploreSlugs,
   singleImageKeys,
   type ExploreSlug,
+  type ImageAlts,
   type SingleImageKey,
 } from "../src/lib/site-images";
 import { bookedDateKeys, hasConflict } from "../src/data/availability";
@@ -224,16 +225,25 @@ function passwordProblem(password: string): string | null {
   return null;
 }
 
-/** A photo description from the request, or a 400 already sent when it is too long. */
-function readAlt(request: express.Request, response: express.Response): string | null {
-  const alt = cleanText(request.body?.alt);
-  if (alt.length > LIMITS.alt) {
-    response
-      .status(400)
-      .json({ errors: { alt: `Keep the description under ${LIMITS.alt} characters.` } });
-    return null;
+/**
+ * A photo's descriptions from the request — English in `alt`, Hebrew and Greek
+ * in `altHe` and `altEl` — or null with a 400 already sent when one is too long.
+ */
+function readAlts(request: express.Request, response: express.Response): ImageAlts | null {
+  const alts: ImageAlts = {
+    alt: cleanText(request.body?.alt),
+    altHe: cleanText(request.body?.altHe),
+    altEl: cleanText(request.body?.altEl),
+  };
+  for (const field of ["alt", "altHe", "altEl"] as const) {
+    if (alts[field].length > LIMITS.alt) {
+      response
+        .status(400)
+        .json({ errors: { [field]: `Keep the description under ${LIMITS.alt} characters.` } });
+      return null;
+    }
   }
-  return alt;
+  return alts;
 }
 
 /*
@@ -318,9 +328,9 @@ app.post(
       return;
     }
 
-    const alt = readAlt(request, response);
-    if (alt === null) return;
-    response.json(await replaceSingle(key, file.buffer, file.originalname, file.mimetype, alt));
+    const alts = readAlts(request, response);
+    if (alts === null) return;
+    response.json(await replaceSingle(key, file.buffer, file.originalname, file.mimetype, alts));
   },
 );
 
@@ -342,9 +352,9 @@ app.post(
       return;
     }
 
-    const alt = readAlt(request, response);
-    if (alt === null) return;
-    response.json(await replaceExplore(slug, file.buffer, file.originalname, file.mimetype, alt));
+    const alts = readAlts(request, response);
+    if (alts === null) return;
+    response.json(await replaceExplore(slug, file.buffer, file.originalname, file.mimetype, alts));
   },
 );
 
@@ -359,16 +369,16 @@ app.post(
       return;
     }
 
-    const alt = readAlt(request, response);
-    if (alt === null) return;
-    if (!alt) {
+    const alts = readAlts(request, response);
+    if (alts === null) return;
+    if (!alts.alt) {
       response
         .status(400)
         .json({ errors: { alt: "Describe the photo, so screen readers can announce it." } });
       return;
     }
 
-    response.status(201).json(await addGalleryImage(file.buffer, file.originalname, file.mimetype, alt));
+    response.status(201).json(await addGalleryImage(file.buffer, file.originalname, file.mimetype, alts));
   },
 );
 
@@ -389,14 +399,14 @@ app.delete("/api/site-images/gallery/:id", requireSettledPassword, async (reques
 });
 
 app.patch("/api/site-images/:id/alt", requireSettledPassword, async (request, response) => {
-  const alt = readAlt(request, response);
-  if (alt === null) return;
-  if (!alt) {
+  const alts = readAlts(request, response);
+  if (alts === null) return;
+  if (!alts.alt) {
     response.status(400).json({ errors: { alt: "Description cannot be empty." } });
     return;
   }
 
-  const next = await updateAlt(String(request.params.id), alt);
+  const next = await updateAlt(String(request.params.id), alts);
   if (!next) {
     response.status(404).json({ error: "No such image." });
     return;

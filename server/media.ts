@@ -7,6 +7,7 @@ import {
   exploreSlugs,
   singleImageKeys,
   type ExploreSlug,
+  type ImageAlts,
   type SingleImageKey,
   type SiteImage,
   type SiteImages,
@@ -24,52 +25,98 @@ const defaultsDir = join(here, "..", "src", "assets", "images");
 const defaults = {
   hero: {
     file: "hero.jpg",
-    alt: "Green Villa seen from the garden, with the bay behind it",
+    alt: "Green Villa's white two-storey façade with blue shutters, seen across the lawn",
+    altHe: "החזית הלבנה בת שתי הקומות של וילה גרין, עם תריסים כחולים, במבט מעבר למדשאה",
+    altEl: "Η λευκή διώροφη πρόσοψη της Green Villa με μπλε παντζούρια, πέρα από το γκαζόν",
   },
   lifestyle: {
     file: "lifestyle.jpg",
-    alt: "Sun-drenched bedroom opening onto the villa's sea-facing terrace",
+    alt: "Balcony table and two wooden chairs looking out over the garden to the sea",
+    altHe: "שולחן ושני כיסאות עץ במרפסת, הצופים מעל הגינה אל הים",
+    altEl: "Τραπέζι και δύο ξύλινες καρέκλες στο μπαλκόνι, με θέα πάνω από τον κήπο στη θάλασσα",
   },
   hosts: {
     file: "hosts.jpg",
     alt: "Eti, the host of Green Villa, smiling",
+    altHe: "אתי, המארחת של וילה גרין, מחייכת",
+    altEl: "Η Έτι, η οικοδέσποινα της Green Villa, χαμογελά",
   },
-} satisfies Record<SingleImageKey, { file: string; alt: string }>;
+} satisfies Record<SingleImageKey, { file: string } & ImageAlts>;
 
-const galleryDefaults = [
-  "Infinity pool overlooking the Aegean at sunset",
-  "Master bedroom with linen bedding and sea view",
-  "Open-plan living room in Mediterranean minimalist style",
-  "Stone terrace with lounge seating above the cliffs",
-  "Poolside sun deck framed by olive trees",
-  "Sunset over the bay seen from the villa",
-  "Al fresco dining terrace lit for the evening",
+const galleryDefaults: ImageAlts[] = [
+  {
+    alt: "Raised plunge pool under white shade sails in the garden, with the sea beyond",
+    altHe: "בריכה מוגבהת תחת מפרשי צל לבנים בגינה, והים ברקע",
+    altEl: "Υπερυψωμένη πισίνα κάτω από λευκά πανιά σκίασης στον κήπο, με τη θάλασσα πιο πέρα",
+  },
+  {
+    alt: "Living room with two grey sofas, glass coffee tables and a jute rug",
+    altHe: "סלון עם שתי ספות אפורות, שולחנות קפה מזכוכית ושטיח יוטה",
+    altEl: "Σαλόνι με δύο γκρι καναπέδες, γυάλινα τραπεζάκια και χαλί από γιούτα",
+  },
+  {
+    alt: "Dining table set with flowers in the open-plan living area, glass doors open to the garden",
+    altHe: "שולחן אוכל ועליו פרחים בחלל הפתוח, ודלתות זכוכית פתוחות אל הגינה",
+    altEl: "Τραπεζαρία με λουλούδια στον ενιαίο χώρο, με τις τζαμόπορτες ανοιχτές προς τον κήπο",
+  },
+  {
+    alt: "Double bedroom with white linen, a ceiling fan and French windows onto a balcony",
+    altHe: "חדר שינה זוגי עם מצעים לבנים, מאוורר תקרה ודלתות צרפתיות אל מרפסת",
+    altEl: "Δίκλινο υπνοδωμάτιο με λευκά σεντόνια, ανεμιστήρα οροφής και μπαλκονόπορτες",
+  },
+  {
+    alt: "Balcony with a small table and two director's chairs overlooking the sea",
+    altHe: "מרפסת עם שולחן קטן ושני כיסאות במאי, הצופה אל הים",
+    altEl: "Μπαλκόνι με τραπεζάκι και δύο καρέκλες σκηνοθέτη, με θέα στη θάλασσα",
+  },
+  {
+    alt: "Covered outdoor dining area with a long table, white chairs and a built-in barbecue",
+    altHe: "פינת אוכל מקורה בחוץ עם שולחן ארוך, כיסאות לבנים ומנגל בנוי",
+    altEl: "Σκεπαστή υπαίθρια τραπεζαρία με μακρύ τραπέζι, λευκές καρέκλες και χτιστή ψησταριά",
+  },
+  {
+    alt: "Wooden jetty on the pebble beach with striped loungers and towels",
+    altHe: "מזח עץ בחוף החלוקים עם כיסאות נוח ומגבות מפוספסים",
+    altEl: "Ξύλινη προβλήτα στην παραλία με βότσαλα, με ριγέ ξαπλώστρες και πετσέτες",
+  },
 ];
 
-const exploreDefaults: Record<ExploreSlug, { file: string; alt: string }> = {
+const exploreDefaults: Record<ExploreSlug, { file: string } & ImageAlts> = {
   "gialtron-thermal-springs": {
     file: "explore-3.jpg",
     alt: "Thermal water steaming off the rocks into the sea at Loutra Gialtron",
+    altHe: "מים תרמיים מהבילים זורמים מהסלעים אל הים בלוטרה יאלטרון",
+    altEl: "Ιαματικά νερά αχνίζουν από τα βράχια προς τη θάλασσα στα Λουτρά Γιάλτρων",
   },
   "gialtra-village": {
     file: "explore-6.jpg",
     alt: "A taverna table laid under an old plane tree above the sea",
+    altHe: "שולחן טברנה ערוך מתחת לעץ דולב עתיק מעל הים",
+    altEl: "Τραπέζι ταβέρνας στρωμένο κάτω από έναν γέρικο πλάτανο πάνω από τη θάλασσα",
   },
   "gialtra-hills": {
     file: "explore-5.jpg",
     alt: "A dirt track winding through the wooded hills behind the bay",
+    altHe: "דרך עפר מתפתלת בין הגבעות המיוערות שמאחורי המפרץ",
+    altEl: "Χωματόδρομος που ελίσσεται στους δασωμένους λόφους πίσω από τον κόλπο",
   },
   "gregolimano-bay": {
     file: "explore-1.jpg",
     alt: "The sheltered turquoise bay at Gregolimano, enclosed by headlands",
+    altHe: "המפרץ המוגן בגוון טורקיז בגרגולימנו, תחום בין לשונות יבשה",
+    altEl: "Ο προστατευμένος τιρκουάζ κόλπος του Γρεγολίμανου, ανάμεσα σε ακρωτήρια",
   },
   "loutra-edipsou": {
     file: "explore-2.jpg",
     alt: "The waterfront of Loutra Edipsou, lined with houses and fishing boats",
+    altHe: "טיילת החוף של לוטרה אדיפסו, לאורכה בתים וסירות דיג",
+    altEl: "Η παραλία των Λουτρών Αιδηψού, με σπίτια και ψαροκάικα",
   },
   "drymona-waterfalls": {
     file: "explore-4.jpg",
     alt: "The Drymona waterfalls dropping into a green forest pool",
+    altHe: "מפלי דרימונה נשפכים אל בריכה ירוקה ביער",
+    altEl: "Οι καταρράκτες της Δρυμώνας πέφτουν σε μια πράσινη λίμνη μέσα στο δάσος",
   },
 };
 
@@ -86,10 +133,19 @@ interface Row {
   position: number;
   url: string;
   alt: string;
+  altHe: string;
+  altEl: string;
   uploadedAt: string;
 }
 
-const toImage = ({ id, url, alt, uploadedAt }: Row): SiteImage => ({ id, url, alt, uploadedAt });
+const toImage = ({ id, url, alt, altHe, altEl, uploadedAt }: Row): SiteImage => ({
+  id,
+  url,
+  alt,
+  altHe,
+  altEl,
+  uploadedAt,
+});
 
 /** Every record in the store, whatever slot it sits in. */
 function allImages(images: SiteImages): SiteImage[] {
@@ -136,12 +192,13 @@ async function readStore(): Promise<SiteImages | null> {
  * concurrent instances write the same bytes to the same object and insert the
  * same row id, instead of creating two rival sets where one gets swept away.
  */
-async function seedFrom(sourceName: string, alt: string, slot: string): Promise<SiteImage> {
+async function seedFrom(sourceName: string, alts: ImageAlts, slot: string): Promise<SiteImage> {
   const bytes = await readFile(join(defaultsDir, sourceName));
   const mime = sourceName.endsWith(".png") ? "image/png" : "image/jpeg";
   const { url } = await uploadAs(`seed/${slot}-${sourceName}`, bytes, mime);
 
-  return { id: `seed-${slot}`, url, alt, uploadedAt: new Date().toISOString() };
+  const { alt, altHe, altEl } = alts;
+  return { id: `seed-${slot}`, url, alt, altHe, altEl, uploadedAt: new Date().toISOString() };
 }
 
 /**
@@ -162,12 +219,12 @@ async function seed(): Promise<SiteImages> {
   for (const key of singleImageKeys) {
     if (filled.has(key)) continue;
     const preset = defaults[key];
-    rows.push({ ...(await seedFrom(preset.file, preset.alt, key)), slot: key, position: 0 });
+    rows.push({ ...(await seedFrom(preset.file, preset, key)), slot: key, position: 0 });
   }
-  for (const [index, alt] of filled.size === 0 ? galleryDefaults.entries() : []) {
+  for (const [index, alts] of filled.size === 0 ? galleryDefaults.entries() : []) {
     const slot = `gallery-${index}`;
     rows.push({
-      ...(await seedFrom(`gallery-${index + 1}.jpg`, alt, slot)),
+      ...(await seedFrom(`gallery-${index + 1}.jpg`, alts, slot)),
       id: `seed-${slot}`,
       slot: "gallery",
       position: index,
@@ -176,7 +233,7 @@ async function seed(): Promise<SiteImages> {
   for (const slug of exploreSlugs) {
     if (filled.has(slug)) continue;
     const preset = exploreDefaults[slug];
-    rows.push({ ...(await seedFrom(preset.file, preset.alt, slug)), slot: slug, position: 0 });
+    rows.push({ ...(await seedFrom(preset.file, preset, slug)), slot: slug, position: 0 });
   }
 
   /*
@@ -187,10 +244,10 @@ async function seed(): Promise<SiteImages> {
   await transaction(async (run) => {
     for (const row of rows) {
       await run(
-        `INSERT INTO site_images (id, slot, position, url, alt, "uploadedAt")
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO site_images (id, slot, position, url, alt, "altHe", "altEl", "uploadedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          ON CONFLICT (id) DO NOTHING`,
-        [row.id, row.slot, row.position, row.url, row.alt, row.uploadedAt],
+        [row.id, row.slot, row.position, row.url, row.alt, row.altHe, row.altEl, row.uploadedAt],
       );
     }
   });
@@ -223,9 +280,9 @@ async function replaceSlot(slot: string, image: SiteImage): Promise<void> {
   await transaction(async (run) => {
     await run(`DELETE FROM site_images WHERE slot = $1`, [slot]);
     await run(
-      `INSERT INTO site_images (id, slot, position, url, alt, "uploadedAt")
-       VALUES ($1, $2, 0, $3, $4, $5)`,
-      [image.id, slot, image.url, image.alt, image.uploadedAt],
+      `INSERT INTO site_images (id, slot, position, url, alt, "altHe", "altEl", "uploadedAt")
+       VALUES ($1, $2, 0, $3, $4, $5, $6, $7)`,
+      [image.id, slot, image.url, image.alt, image.altHe, image.altEl, image.uploadedAt],
     );
   });
 }
@@ -233,7 +290,23 @@ async function replaceSlot(slot: string, image: SiteImage): Promise<void> {
 /** Puts the uploaded bytes in the bucket under a generated name. */
 async function store(buffer: Buffer, originalName: string, mimeType: string): Promise<SiteImage> {
   const { url } = await upload(buffer, originalName, mimeType);
-  return { id: crypto.randomUUID(), url, alt: "", uploadedAt: new Date().toISOString() };
+  return {
+    id: crypto.randomUUID(),
+    url,
+    alt: "",
+    altHe: "",
+    altEl: "",
+    uploadedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * The descriptions for a replacement photo: the ones sent with it, or — when
+ * no English description came with the file — the ones already on the slot.
+ */
+function keepAlts(sent: ImageAlts, current: ImageAlts): ImageAlts {
+  const { alt, altHe, altEl } = sent.alt ? sent : current;
+  return { alt, altHe, altEl };
 }
 
 /** Replaces one of the single-slot photos (hero, lifestyle, hosts). */
@@ -242,12 +315,12 @@ export async function replaceSingle(
   buffer: Buffer,
   originalName: string,
   mimeType: string,
-  alt: string,
+  alts: ImageAlts,
 ): Promise<SiteImages> {
   const current = await load();
   const image = await store(buffer, originalName, mimeType);
 
-  await replaceSlot(key, { ...image, alt: alt || current[key].alt });
+  await replaceSlot(key, { ...image, ...keepAlts(alts, current[key]) });
   const next = (await readStore())!;
   await removeOrphans(next);
   return next;
@@ -259,12 +332,12 @@ export async function replaceExplore(
   buffer: Buffer,
   originalName: string,
   mimeType: string,
-  alt: string,
+  alts: ImageAlts,
 ): Promise<SiteImages> {
   const current = await load();
   const image = await store(buffer, originalName, mimeType);
 
-  await replaceSlot(slug, { ...image, alt: alt || current.explore[slug].alt });
+  await replaceSlot(slug, { ...image, ...keepAlts(alts, current.explore[slug]) });
   const next = (await readStore())!;
   await removeOrphans(next);
   return next;
@@ -274,16 +347,16 @@ export async function addGalleryImage(
   buffer: Buffer,
   originalName: string,
   mimeType: string,
-  alt: string,
+  { alt, altHe, altEl }: ImageAlts,
 ): Promise<SiteImages> {
   await load();
   const image = await store(buffer, originalName, mimeType);
 
   await query(
-    `INSERT INTO site_images (id, slot, position, url, alt, "uploadedAt")
-     SELECT $1, 'gallery', coalesce(max(position), -1) + 1, $2, $3, $4
+    `INSERT INTO site_images (id, slot, position, url, alt, "altHe", "altEl", "uploadedAt")
+     SELECT $1, 'gallery', coalesce(max(position), -1) + 1, $2, $3, $4, $5, $6
        FROM site_images WHERE slot = 'gallery'`,
-    [image.id, image.url, alt, image.uploadedAt],
+    [image.id, image.url, alt, altHe, altEl, image.uploadedAt],
   );
   return (await readStore())!;
 }
@@ -298,13 +371,16 @@ export async function removeGalleryImage(id: string): Promise<SiteImages | null>
   return next;
 }
 
-/** Edits a description, wherever in the store that image lives. */
-export async function updateAlt(id: string, alt: string): Promise<SiteImages | null> {
+/** Edits the descriptions, wherever in the store that image lives. */
+export async function updateAlt(
+  id: string,
+  { alt, altHe, altEl }: ImageAlts,
+): Promise<SiteImages | null> {
   await load();
-  const updated = await query(`UPDATE site_images SET alt = $2 WHERE id = $1 RETURNING id`, [
-    id,
-    alt,
-  ]);
+  const updated = await query(
+    `UPDATE site_images SET alt = $2, "altHe" = $3, "altEl" = $4 WHERE id = $1 RETURNING id`,
+    [id, alt, altHe, altEl],
+  );
   if (updated.length === 0) return null;
   return (await readStore())!;
 }

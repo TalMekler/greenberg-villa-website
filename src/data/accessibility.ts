@@ -14,4 +14,4 @@ export const accessibilityCoordinator = {
  * When the accessibility statement was last reviewed against the site
  * (docs/accessibility-audit.md). Change it whenever the statement changes.
  */
-export const accessibilityUpdated = new Date(2026, 8, 18);
+export const accessibilityUpdated = new Date(2026, 8, 19);

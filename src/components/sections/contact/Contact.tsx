@@ -86,7 +86,7 @@ const channelLabels = {
 
 export function Contact({ stay, hostsImage }: ContactProps) {
   const { t, language } = useLanguage();
-  const hostsAlt = hostsImage ? localizeAlt(hostsImage.alt, language, t.contact.hosts.photoAlt) : null;
+  const hostsAlt = hostsImage ? localizeAlt(hostsImage, language, t.contact.hosts.photoAlt) : null;
   const formId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const policyLinkRef = useRef<HTMLAnchorElement>(null);

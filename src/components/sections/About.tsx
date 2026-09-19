@@ -7,7 +7,7 @@ import { Icon } from "../ui/Icon";
 
 export function About({ image }: { image: SiteImage }) {
   const { t, language } = useLanguage();
-  const alt = localizeAlt(image.alt, language);
+  const alt = localizeAlt(image, language);
 
   return (
     <section id="about" className="bg-shell px-5 py-20 sm:px-8 lg:px-20 lg:py-[120px]">

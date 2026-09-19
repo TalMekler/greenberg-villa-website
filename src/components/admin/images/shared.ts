@@ -1,4 +1,9 @@
-import { ACCEPTED_IMAGE_TYPES, MAX_IMAGE_BYTES, type SiteImages } from "../../../lib/site-images";
+import {
+  ACCEPTED_IMAGE_TYPES,
+  MAX_IMAGE_BYTES,
+  type ImageAlts,
+  type SiteImages,
+} from "../../../lib/site-images";
 import { ApiError } from "../../../lib/api";
 
 export const accept = ACCEPTED_IMAGE_TYPES.join(",");
@@ -16,3 +21,11 @@ export function messageFor(caught: unknown, field: string): string {
   }
   return "That did not go through.";
 }
+
+export const emptyAlts: ImageAlts = { alt: "", altHe: "", altEl: "" };
+
+/** The three current descriptions of a stored photo. */
+export const altsOf = ({ alt, altHe, altEl }: ImageAlts): ImageAlts => ({ alt, altHe, altEl });
+
+export const sameAlts = (a: ImageAlts, b: ImageAlts) =>
+  a.alt.trim() === b.alt.trim() && a.altHe.trim() === b.altHe.trim() && a.altEl.trim() === b.altEl.trim();

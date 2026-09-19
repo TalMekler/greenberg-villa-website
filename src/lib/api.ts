@@ -1,6 +1,6 @@
 import type { BookingPrice, Inquiry, InquiryInput, InquiryStatus } from "./inquiry";
 import type { AdminUser } from "./user";
-import type { ExploreSlug, SingleImageKey, SiteImages } from "./site-images";
+import type { ExploreSlug, ImageAlts, SingleImageKey, SiteImages } from "./site-images";
 import type { VillaLocation } from "./location";
 import type { NotifyResult } from "./notify";
 import { PRIVACY_POLICY_VERSION } from "./privacy";
@@ -164,10 +164,12 @@ export async function fetchSiteImages(): Promise<SiteImages> {
 }
 
 /** multipart — `request` sets a JSON content type, so this posts directly. */
-async function uploadImage(path: string, file: File, alt: string): Promise<SiteImages> {
+async function uploadImage(path: string, file: File, alts: ImageAlts): Promise<SiteImages> {
   const body = new FormData();
   body.append("image", file);
-  body.append("alt", alt);
+  body.append("alt", alts.alt);
+  body.append("altHe", alts.altHe);
+  body.append("altEl", alts.altEl);
 
   let response: Response;
   try {
@@ -192,31 +194,31 @@ async function uploadImage(path: string, file: File, alt: string): Promise<SiteI
 export async function uploadSingleImage(
   key: SingleImageKey,
   file: File,
-  alt: string,
+  alts: ImageAlts,
 ): Promise<SiteImages> {
-  return uploadImage(`/api/site-images/single/${key}`, file, alt);
+  return uploadImage(`/api/site-images/single/${key}`, file, alts);
 }
 
 export async function uploadExploreImage(
   slug: ExploreSlug,
   file: File,
-  alt: string,
+  alts: ImageAlts,
 ): Promise<SiteImages> {
-  return uploadImage(`/api/site-images/explore/${slug}`, file, alt);
+  return uploadImage(`/api/site-images/explore/${slug}`, file, alts);
 }
 
-export async function uploadGalleryImage(file: File, alt: string): Promise<SiteImages> {
-  return uploadImage("/api/site-images/gallery", file, alt);
+export async function uploadGalleryImage(file: File, alts: ImageAlts): Promise<SiteImages> {
+  return uploadImage("/api/site-images/gallery", file, alts);
 }
 
 export async function deleteGalleryImage(id: string): Promise<SiteImages> {
   return request<SiteImages>(`/api/site-images/gallery/${id}`, { method: "DELETE" });
 }
 
-export async function updateImageAlt(id: string, alt: string): Promise<SiteImages> {
+export async function updateImageAlt(id: string, alts: ImageAlts): Promise<SiteImages> {
   return request<SiteImages>(`/api/site-images/${id}/alt`, {
     method: "PATCH",
-    body: JSON.stringify({ alt }),
+    body: JSON.stringify(alts),
   });
 }
 

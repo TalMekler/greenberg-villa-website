@@ -4,9 +4,16 @@ export interface SiteImage {
   id: string;
   /** Path to fetch the file from, e.g. `/api/media/<uuid>.jpg`. */
   url: string;
+  /** English description, read to screen readers in place of the photo. */
   alt: string;
+  /** Hebrew and Greek descriptions; empty when not written yet. */
+  altHe: string;
+  altEl: string;
   uploadedAt: string;
 }
+
+/** A photo's descriptions in the three site languages. */
+export type ImageAlts = Pick<SiteImage, "alt" | "altHe" | "altEl">;
 
 /** The standalone photos — one slot each, replace-only. */
 export const singleImageKeys = ["hero", "lifestyle", "hosts"] as const;

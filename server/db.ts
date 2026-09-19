@@ -166,6 +166,16 @@ export async function ensureSchema(): Promise<void> {
       "uploadedAt" text NOT NULL
     )
   `);
+  /*
+    Hebrew and Greek descriptions, added after launch. Empty means not written
+    yet: the site then falls back to its built-in translations of the seed
+    text, or reads the English marked lang="en".
+  */
+  await query(`
+    ALTER TABLE site_images
+      ADD COLUMN IF NOT EXISTS "altHe" text NOT NULL DEFAULT '',
+      ADD COLUMN IF NOT EXISTS "altEl" text NOT NULL DEFAULT ''
+  `);
   await query(`CREATE INDEX IF NOT EXISTS site_images_slot ON site_images (slot, position)`);
 
   /*

@@ -456,7 +456,6 @@ export const en: LegalDocuments = {
           "Despite our efforts, some parts of the site are not yet fully accessible. These are the ones we know about:",
           {
             list: [
-              "Photo descriptions: some of the villa photos currently have a description that belongs to a different photo (for example, a photo of the living room described as the master bedroom). Corrected descriptions have been written but not yet entered on the site. Until they are, what a screen reader reads for these photos may not match what they show.",
               "Descriptions added later: if we add a new photo, its description may be available in English only until it is translated. It is marked as English, so a screen reader reads it with an English voice.",
               "Text over the main photo: the contrast of the title and subtitle over the large photo at the top of the page was checked by calculation, because automated tools cannot measure text over images. On an unusually short, wide window, over a very bright photo, the subtitle may fall slightly below the required contrast.",
               "The map is visual by nature. Please use the text next to it, which gives the same information. The map provider's attribution line is third-party content and was not tested.",

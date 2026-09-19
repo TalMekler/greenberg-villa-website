@@ -1,15 +1,16 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { ApiError, uploadGalleryImage } from "../../../lib/api";
 import { MAX_IMAGE_BYTES } from "../../../lib/site-images";
-import { FieldError, adminFieldClass, adminLabelClass, smallButton } from "../shared";
+import { FieldError, adminLabelClass, smallButton } from "../shared";
+import { AltFields } from "./AltFields";
 import { GalleryRow } from "./GalleryRow";
-import { accept, maxMb, messageFor, type ImagesPanelProps } from "./shared";
+import { accept, emptyAlts, maxMb, messageFor, type ImagesPanelProps } from "./shared";
 
 export function GalleryEditor({ images, onChanged }: ImagesPanelProps) {
   const fieldId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [alt, setAlt] = useState("");
-  const [errors, setErrors] = useState<Partial<Record<"image" | "alt", string>>>({});
+  const [alts, setAlts] = useState(emptyAlts);
+  const [errors, setErrors] = useState<Partial<Record<"image" | keyof typeof alts, string>>>({});
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -32,9 +33,9 @@ export function GalleryEditor({ images, onChanged }: ImagesPanelProps) {
 
     setBusy(true);
     try {
-      onChanged(await uploadGalleryImage(file, alt));
+      onChanged(await uploadGalleryImage(file, alts));
       if (fileRef.current) fileRef.current.value = "";
-      setAlt("");
+      setAlts(emptyAlts);
       setStatus("Photo added to the gallery.");
     } catch (caught) {
       if (caught instanceof ApiError && caught.fieldErrors) {
@@ -86,26 +87,21 @@ export function GalleryEditor({ images, onChanged }: ImagesPanelProps) {
           <FieldError id={`${fieldId}-image-error`} message={errors.image} />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label htmlFor={`${fieldId}-alt`} className={adminLabelClass}>
-            Description
-          </label>
-          <input
-            id={`${fieldId}-alt`}
-            value={alt}
-            onChange={(event) => setAlt(event.target.value)}
-            aria-invalid={Boolean(errors.alt)}
-            aria-describedby={
-              errors.alt ? `${fieldId}-alt-hint ${fieldId}-alt-error` : `${fieldId}-alt-hint`
-            }
-            className={adminFieldClass}
-          />
+        <fieldset className="flex flex-col gap-2">
+          <legend className={adminLabelClass}>Description</legend>
           <p id={`${fieldId}-alt-hint`} className="font-sans text-[12px] text-slate">
-            Read aloud to blind visitors in place of the photo. Say what it shows, in English, in
-            one sentence — e.g. “Infinity pool overlooking the bay at sunset”.
+            Read aloud to blind visitors in place of the photo. Say what it shows in one sentence —
+            e.g. “Infinity pool overlooking the bay at sunset”. English is required; Hebrew and
+            Greek are read on those pages, and fall back to the English when left empty.
           </p>
-          <FieldError id={`${fieldId}-alt-error`} message={errors.alt} />
-        </div>
+          <AltFields
+            id={`${fieldId}-alt`}
+            value={alts}
+            onChange={setAlts}
+            errors={errors}
+            describedBy={`${fieldId}-alt-hint`}
+          />
+        </fieldset>
 
         {status ? (
           <p role="status" className="font-sans text-[13px] text-navy">

@@ -31,5 +31,5 @@ export const contactChannels = [
     value: contactNumbers.whatsapp,
   },
   { icon: "phone", href: `tel:+${digits(contactNumbers.phone)}`, value: contactNumbers.phone },
-  { icon: "mail", href: "mailto:welcome@greenvilla.gr", value: "welcome@greenvilla.gr" },
+  { icon: "mail", href: "mailto:Greenbergeti63@gmail.com", value: "Greenbergeti63@gmail.com" },
 ] as const satisfies readonly { icon: IconName; href: string; value: string }[];

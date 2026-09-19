@@ -171,7 +171,7 @@ const guestCopy: Record<Language, GuestCopy> = {
     nights: "nights",
     guests: "Guests",
     signOff: "Warm regards,",
-    hosts: "Eti & Zeevik",
+    hosts: "Eti",
     place: "Green Villa, Evia",
   },
   he: {
@@ -188,7 +188,7 @@ const guestCopy: Record<Language, GuestCopy> = {
     nights: "לילות",
     guests: "אורחים",
     signOff: "בברכה חמה,",
-    hosts: "אתי וזאביק",
+    hosts: "אתי",
     place: "גרין וילה, אוויה",
   },
   el: {
@@ -205,7 +205,7 @@ const guestCopy: Record<Language, GuestCopy> = {
     nights: "διανυκτερεύσεις",
     guests: "Επισκέπτες",
     signOff: "Με θερμούς χαιρετισμούς,",
-    hosts: "Έτι & Ζέεβικ",
+    hosts: "Έτι",
     place: "Green Villa, Εύβοια",
   },
 };

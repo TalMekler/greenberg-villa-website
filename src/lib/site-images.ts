@@ -9,7 +9,7 @@ export interface SiteImage {
 }
 
 /** The standalone photos — one slot each, replace-only. */
-export const singleImageKeys = ["hero", "lifestyle"] as const;
+export const singleImageKeys = ["hero", "lifestyle", "hosts"] as const;
 export type SingleImageKey = (typeof singleImageKeys)[number];
 
 /**
@@ -29,6 +29,8 @@ export type ExploreSlug = (typeof exploreSlugs)[number];
 export interface SiteImages {
   hero: SiteImage;
   lifestyle: SiteImage;
+  /** The host's portrait beside the contact form. */
+  hosts: SiteImage;
   gallery: SiteImage[];
   explore: Record<ExploreSlug, SiteImage>;
 }

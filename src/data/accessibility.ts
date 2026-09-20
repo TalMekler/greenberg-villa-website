@@ -5,7 +5,7 @@
 */
 export const accessibilityCoordinator = {
   name: "[[A11Y_CONTACT_NAME]]",
-  email: "Greenbergeti63@gmail.com",
+  email: "[[A11Y_EMAIL]]",
   /** International format, e.g. "+972 50 123 4567". */
   phone: "[[A11Y_PHONE]]",
 } as const;

@@ -10,7 +10,7 @@ export const operator = {
   name: "Eti Greenberg",
   /** A postal address where notices and privacy requests can be sent. */
   address: "[[OWNER_ADDRESS]]",
-  email: "[[EMAIL]]",
+  email: "Greenbergeti63@gmail.com",
   /** International format, e.g. "+972 50 123 4567". */
   phone: "[[PHONE]]",
   /** The villa's number in the Greek short-term rental registry (ΑΜΑ). */
